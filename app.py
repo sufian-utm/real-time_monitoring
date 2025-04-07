@@ -50,7 +50,9 @@ def show_confidence(model, X):
 st.sidebar.title("Model Visualizations")
 
 # Model selection (Here, you need to replace with actual models)
-model_selection = st.sidebar.selectbox("Select a model", ["Model 1", "Model 2", "Model 3"])  # Replace with actual model names
+model_selection = st.sidebar.selectbox("Select a model", ["MLP", "CNN1D", "ResNet1D", "LSTM1D", "GRU1D", "BiLSTM1D", 
+                                                          "Transformer1D", "DenseNet1D", "VGG16_1D", "Inception1D", 
+                                                          "Xception1D", "MobileNet1D", "EfficientNet1D", "DeepCNN1D"])  # Replace with actual model names
 
 # Visualization options
 feature_selection = st.sidebar.checkbox("Show Feature Importance", value=True)
