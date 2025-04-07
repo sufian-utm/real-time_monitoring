@@ -1,4 +1,4 @@
-import os
+simport os
 import streamlit as st
 import shap
 import matplotlib.pyplot as plt
@@ -65,8 +65,8 @@ base_dir = "/mount/src/real-time_monitoring"
 # Load the model (replace with actual model loading function)
 def load_model(model_name):
     # Placeholder function for model loading (Replace with actual model loading logic)
-    model_path = os.path.join(base_dir, model_name)
-    model = torch.load(f"models/{model_path}.pth")
+    model_path = os.path.join(base_dir, "models", model_name)
+    model = torch.load(f"{model_path}.pth")
     model.eval()
     return model
 
