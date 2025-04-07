@@ -9,6 +9,20 @@ import torch
 import torch.nn as nn
 from sklearn.inspection import permutation_importance
 import torch.nn.functional as F
+from models.mlp import MLP
+from models.cnn1d import CNN1D
+from models.resnet1d import ResNet1D
+from models.lstm1d import LSTM1D
+from models.gru1d import GRU1D
+from models.bilstm1d import BiLSTM1D
+from models.transformer1d import Transformer1D
+from models.densenet1d import DenseNet1D
+from models.vgg16_1d import VGG16_1D
+from models.inception1d import Inception1D
+from models.xception1d import Xception1D
+from models.mobilenet1d import MobileNet1D
+from models.efficientnet1d import EfficientNet1D
+from models.deepcnn1d import DeepCNN1D
 
 # Function to calculate and plot SHAP values
 def plot_shap_summary(model, X):
@@ -50,10 +64,25 @@ def show_confidence(model, X):
 # Sidebar for model selection and visualization options
 st.sidebar.title("Model Visualizations")
 
+model_dict = {
+    "MLP": MLP,
+    "CNN1D": CNN1D,
+    "ResNet1D": ResNet1D,
+    "LSTM1D": LSTM1D,
+    "GRU1D": GRU1D,
+    "BiLSTM1D": BiLSTM1D,
+    "Transformer1D": Transformer1D,
+    "DenseNet1D": DenseNet1D,
+    "VGG16_1D": VGG16_1D,
+    "Inception1D": Inception1D,
+    "Xception1D": Xception1D,
+    "MobileNet1D": MobileNet1D,
+    "EfficientNet1D": EfficientNet1D,
+    "DeepCNN1D": DeepCNN1D
+}
+
 # Model selection (Here, you need to replace with actual models)
-model_selection = st.sidebar.selectbox("Select a model", ["MLP", "CNN1D", "ResNet1D", "LSTM1D", "GRU1D", "BiLSTM1D", 
-                                                          "Transformer1D", "DenseNet1D", "VGG16_1D", "Inception1D", 
-                                                          "Xception1D", "MobileNet1D", "EfficientNet1D", "DeepCNN1D"])  # Replace with actual model names
+model_selection = st.sidebar.selectbox("Select a model", list(model_dict.keys()))  # Replace with actual model names
 
 # Visualization options
 feature_selection = st.sidebar.checkbox("Show Feature Importance", value=True)
@@ -61,9 +90,12 @@ confidence_selection = st.sidebar.checkbox("Show Prediction Confidence", value=T
 
 # Assuming you have pre-trained models saved or loaded here
 # Load the model (replace with actual model loading function)
-def load_model(model_name):
-    # Placeholder function for model loading (Replace with actual model loading logic)
-    model.load_state_dict(torch.load(f"models/{model_name}.pth", map_location=torch.device("cpu")))
+def load_model(model_name, input_size=1024, model_path_dir="models/"):
+    assert model_name in model_dict, f"{model_name} is not a valid model name."
+    model_class = model_dict[model_name]
+    model = model_class(input_size=input_size)  # Adjust if your model takes different args
+    model_path = os.path.join(model_path_dir, f"{model_name}.pth")
+    model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
     model.eval()
     return model
 
