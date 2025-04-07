@@ -66,7 +66,7 @@ base_dir = "/mount/src/real-time_monitoring"
 def load_model(model_name):
     # Placeholder function for model loading (Replace with actual model loading logic)
     model_path = os.path.join(base_dir, "models", model_name)
-    model = torch.load(f"{model_path}.pth")
+    model = torch.load(f"models/{model_name}.pth")
     model.eval()
     return model
 
