@@ -59,14 +59,11 @@ model_selection = st.sidebar.selectbox("Select a model", ["MLP", "CNN1D", "ResNe
 feature_selection = st.sidebar.checkbox("Show Feature Importance", value=True)
 confidence_selection = st.sidebar.checkbox("Show Prediction Confidence", value=True)
 
-base_dir = "/mount/src/real-time_monitoring"
-
 # Assuming you have pre-trained models saved or loaded here
 # Load the model (replace with actual model loading function)
 def load_model(model_name):
     # Placeholder function for model loading (Replace with actual model loading logic)
-    model_path = os.path.join(base_dir, "models", model_name)
-    model = torch.load(f"{model_path}.pth")
+    model.load_state_dict(torch.load(f"models/{model_name}.pth", map_location=torch.device("cpu")))
     model.eval()
     return model
 
