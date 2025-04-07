@@ -62,7 +62,7 @@ confidence_selection = st.sidebar.checkbox("Show Prediction Confidence", value=T
 # Load the model (replace with actual model loading function)
 def load_model(model_name):
     # Placeholder function for model loading (Replace with actual model loading logic)
-    model = torch.load(f"{model_name}.pth")
+    model = torch.load(f"models/{model_name}.pth")
     model.eval()
     return model
 
