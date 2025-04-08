@@ -122,8 +122,8 @@ if df is not None:
             "Gradient Boosting": GradientBoostingClassifier(),
             "Extra Trees": ExtraTreesClassifier(),
             "AdaBoost": AdaBoostClassifier(),
-            "Bagging": BaggingClassifier(),
             "Linear SVC": LinearSVC(),
+            "Passive Aggressive": PassiveAggressiveClassifier(),
         }
 
         selected_model = st.selectbox("Choose ML Model", options=list(models.keys()))
