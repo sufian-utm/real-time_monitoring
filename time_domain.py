@@ -10,7 +10,7 @@ st.set_page_config(page_title="CWRU Time-Domain Feature Explorer", layout="wide"
 @st.cache_data
 def load_data():
     url = st.text_input("Enter CSV URL from GitHub or upload a file:",
-                        value="https://raw.githubusercontent.com/username/repo/main/cwru_features.csv")
+                        value="https://github.com/sufian-utm/real-time_monitoring/blob/main/data/cwru/12k_DE_td_features.csv")
     if url:
         try:
             df = pd.read_csv(url)
