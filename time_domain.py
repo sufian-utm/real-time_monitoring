@@ -26,7 +26,7 @@ else:
     df = load_data()
 
 if df is not None:
-    st.title("CWRU Time-Domain Feature Visualization")
+    st.title("Feature Visualization")
     st.subheader("Preview of Dataset")
     st.dataframe(df.head(), use_container_width=True)
 
