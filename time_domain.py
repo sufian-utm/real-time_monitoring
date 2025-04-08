@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 from sklearn.preprocessing import StandardScaler, LabelEncoder
@@ -17,9 +16,6 @@ from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from sklearn.neighbors import KNeighborsClassifier, NearestCentroid
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
-from xgboost import XGBClassifier
-from lightgbm import LGBMClassifier
-from catboost import CatBoostClassifier
 
 st.set_page_config(page_title="Feature Explorer", layout="wide")
 
@@ -128,19 +124,6 @@ if df is not None:
             "AdaBoost": AdaBoostClassifier(),
             "Bagging": BaggingClassifier(),
             "Linear SVC": LinearSVC(),
-            "Ridge Classifier": RidgeClassifier(),
-            "SGD Classifier": SGDClassifier(),
-            "Passive Aggressive": PassiveAggressiveClassifier(),
-            "Gaussian NB": GaussianNB(),
-            "Multinomial NB": MultinomialNB(),
-            "Bernoulli NB": BernoulliNB(),
-            "Nearest Centroid": NearestCentroid(),
-            "Extra Tree Classifier": ExtraTreeClassifier(),
-            "LDA": LinearDiscriminantAnalysis(),
-            "QDA": QuadraticDiscriminantAnalysis(),
-            "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss'),
-            "LightGBM": LGBMClassifier(),
-            "CatBoost": CatBoostClassifier(verbose=0)
         }
 
         selected_model = st.selectbox("Choose ML Model", options=list(models.keys()))
