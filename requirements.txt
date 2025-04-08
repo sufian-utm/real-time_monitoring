@@ -1,19 +1,19 @@
-# Core dependencies
+# Core packages (safe versions)
 numpy==1.24.4
 pandas==2.2.2
-matplotlib==3.7.5
+matplotlib==3.7.1
 seaborn==0.12.2
 scikit-learn==1.3.2
 plotly==5.18.0
 streamlit==1.32.2
 
-# ML and visualization
+# ML and Explainability
 shap==0.44.1
 xgboost==2.0.3
 lightgbm==4.1.0
 catboost==1.2.2
 
-# DL frameworks
+# Deep Learning
 tensorflow==2.15.0
 torch==2.1.2
 torchaudio==2.1.2
@@ -22,6 +22,6 @@ torchvision==0.16.2
 # Federated Learning
 flwr==1.7.0
 
-# Optional
+# Optional utilities
 joblib==1.3.2
 scipy==1.11.4
