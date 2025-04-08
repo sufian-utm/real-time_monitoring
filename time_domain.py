@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 
-st.set_page_config(page_title="CWRU Time-Domain Feature Explorer", layout="wide")
+st.set_page_config(page_title="Feature Explorer", layout="wide")
 
 # Load data from GitHub or local file
 @st.cache_data
