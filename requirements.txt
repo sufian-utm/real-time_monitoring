@@ -1,27 +1,16 @@
-# Core packages (safe versions)
-numpy==1.24.4
-pandas==2.2.2
+# Streamlit and plotting
+streamlit==1.32.2
 matplotlib==3.7.1
 seaborn==0.12.2
-scikit-learn==1.3.2
 plotly==5.18.0
-streamlit==1.32.2
 
-# ML and Explainability
-shap==0.44.1
+# Core data and ML packages
+pandas==2.2.2
+numpy==1.24.4
+scikit-learn==1.3.2
+joblib==1.3.2
+
+# Boosted tree models
 xgboost==2.0.3
 lightgbm==4.1.0
 catboost==1.2.2
-
-# Deep Learning
-tensorflow==2.15.0
-torch==2.1.2
-torchaudio==2.1.2
-torchvision==0.16.2
-
-# Federated Learning
-flwr==1.7.0
-
-# Optional utilities
-joblib==1.3.2
-scipy==1.11.4
