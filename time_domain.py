@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="Feature Explorer", layout="wide")
 
@@ -10,7 +11,7 @@ st.set_page_config(page_title="Feature Explorer", layout="wide")
 @st.cache_data
 def load_data():
     url = st.text_input("Enter CSV URL from GitHub or upload a file:",
-                        value="https://github.com/sufian-utm/real-time_monitoring/blob/main/data/cwru/12k_DE_td_features.csv")
+                        value="https://github.com/sufian-utm/real-time_monitoring/blob/data/cwru/12k_DE_td_features.csv")
     if url:
         try:
             df = pd.read_csv(url)
@@ -51,6 +52,18 @@ if df is not None:
         fig2 = px.box(df, x="fault_type", y=selected_feature, color="fault_type", points="all")
         st.plotly_chart(fig2, use_container_width=True)
 
+        # Violin plot
+        if st.checkbox("Show Violin Plot"):
+            st.subheader(f"Violin Plot of {selected_feature} by Fault Type")
+            fig4 = px.violin(df, x="fault_type", y=selected_feature, color="fault_type", box=True, points="all")
+            st.plotly_chart(fig4, use_container_width=True)
+
+        # Scatter plot by fault size
+        if st.checkbox("Show Scatter Plot by Fault Size"):
+            st.subheader(f"Scatter Plot of {selected_feature} vs Fault Size")
+            fig5 = px.scatter(df, x="fault_size", y=selected_feature, color="fault_type")
+            st.plotly_chart(fig5, use_container_width=True)
+
         # Correlation Heatmap
         if st.checkbox("Show Correlation Heatmap"):
             st.subheader("Feature Correlation Heatmap")
@@ -58,5 +71,24 @@ if df is not None:
             corr = df[numeric_cols].corr()
             sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
             st.pyplot(fig3)
+
+        # Feature Distribution Comparison
+        if st.checkbox("Compare Feature Distributions"):
+            st.subheader("Compare Feature Distributions Across Fault Types")
+            fig6 = go.Figure()
+            for f_type in df['fault_type'].unique():
+                subset = df[df['fault_type'] == f_type]
+                fig6.add_trace(go.Histogram(x=subset[selected_feature], name=str(f_type), opacity=0.5))
+            fig6.update_layout(barmode='overlay', xaxis_title=selected_feature, yaxis_title="Count")
+            st.plotly_chart(fig6, use_container_width=True)
+
+        # Time Series Plot
+        if st.checkbox("Show Time Series Plot"):
+            st.subheader("Time Series Plot of Feature by Index")
+            for f_type in df['fault_type'].unique():
+                subset = df[df['fault_type'] == f_type].reset_index()
+                fig_ts = px.line(subset, x=subset.index, y=selected_feature, title=f"{selected_feature} over Samples - {f_type}", labels={'index': 'Sample Index'})
+                fig_ts.update_layout(showlegend=False)
+                st.plotly_chart(fig_ts, use_container_width=True)
 else:
     st.info("Please enter a valid GitHub URL or upload a file to begin.")
