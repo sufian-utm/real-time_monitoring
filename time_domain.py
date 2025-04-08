@@ -4,15 +4,22 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
-
+import seaborn as sns
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM, Dropout
-import flwr as fl  # Federated Learning
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.ensemble import (
+    RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, ExtraTreesClassifier, BaggingClassifier
+)
+from sklearn.svm import SVC, LinearSVC
+from sklearn.linear_model import LogisticRegression, RidgeClassifier, SGDClassifier, PassiveAggressiveClassifier
+from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
+from sklearn.neighbors import KNeighborsClassifier, NearestCentroid
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
 
 st.set_page_config(page_title="Feature Explorer", layout="wide")
 
@@ -71,6 +78,22 @@ if df is not None:
             fig5 = px.scatter(df, x="fault_size", y=selected_feature, color="fault_type")
             st.plotly_chart(fig5, use_container_width=True)
 
+        if st.checkbox("Show Correlation Heatmap"):
+            st.subheader("Feature Correlation Heatmap")
+            fig3, ax = plt.subplots(figsize=(12, 8))
+            corr = df[numeric_cols].corr()
+            sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+            st.pyplot(fig3)
+
+        if st.checkbox("Compare Feature Distributions"):
+            st.subheader("Compare Feature Distributions Across Fault Types")
+            fig6 = go.Figure()
+            for f_type in df['fault_type'].unique():
+                subset = df[df['fault_type'] == f_type]
+                fig6.add_trace(go.Histogram(x=subset[selected_feature], name=str(f_type), opacity=0.5))
+            fig6.update_layout(barmode='overlay', xaxis_title=selected_feature, yaxis_title="Count")
+            st.plotly_chart(fig6, use_container_width=True)
+
         if st.checkbox("Show Time Series Plot"):
             st.subheader("Time Series Plot of Feature by Index")
             for f_type in df['fault_type'].unique():
@@ -84,83 +107,76 @@ if df is not None:
     elif page == "ML Classification":
         st.title("Machine Learning Classification Models")
 
-        # Machine Learning Models (Random Forest, SVM)
-        st.subheader("Random Forest Classifier")
+        st.subheader("Data Preparation")
+        target_col = "fault_type"
+        df = df.dropna(subset=[target_col])
         X = df[numeric_cols]
-        y = df['fault_type']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        y = LabelEncoder().fit_transform(df[target_col])
 
-        rf_model = RandomForestClassifier(n_estimators=100)
-        rf_model.fit(X_train, y_train)
-        y_pred_rf = rf_model.predict(X_test)
-        accuracy_rf = accuracy_score(y_test, y_pred_rf)
-        st.write(f"Random Forest Classifier Accuracy: {accuracy_rf:.2f}")
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
-        st.subheader("Support Vector Machine")
-        svm_model = SVC(kernel='linear')
-        svm_model.fit(X_train, y_train)
-        y_pred_svm = svm_model.predict(X_test)
-        accuracy_svm = accuracy_score(y_test, y_pred_svm)
-        st.write(f"SVM Accuracy: {accuracy_svm:.2f}")
+        models = {
+            "Logistic Regression": LogisticRegression(max_iter=1000),
+            "Random Forest": RandomForestClassifier(),
+            "SVM": SVC(probability=True),
+            "KNN": KNeighborsClassifier(),
+            "Decision Tree": DecisionTreeClassifier(),
+            "Gradient Boosting": GradientBoostingClassifier(),
+            "Extra Trees": ExtraTreesClassifier(),
+            "AdaBoost": AdaBoostClassifier(),
+            "Bagging": BaggingClassifier(),
+            "Linear SVC": LinearSVC(),
+            "Ridge Classifier": RidgeClassifier(),
+            "SGD Classifier": SGDClassifier(),
+            "Passive Aggressive": PassiveAggressiveClassifier(),
+            "Gaussian NB": GaussianNB(),
+            "Multinomial NB": MultinomialNB(),
+            "Bernoulli NB": BernoulliNB(),
+            "Nearest Centroid": NearestCentroid(),
+            "Extra Tree Classifier": ExtraTreeClassifier(),
+            "LDA": LinearDiscriminantAnalysis(),
+            "QDA": QuadraticDiscriminantAnalysis(),
+            "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='mlogloss'),
+            "LightGBM": LGBMClassifier(),
+            "CatBoost": CatBoostClassifier(verbose=0)
+        }
+
+        selected_model = st.selectbox("Choose ML Model", options=list(models.keys()))
+        model = models[selected_model]
+
+        if st.button("Train and Evaluate"):
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+            st.text("Classification Report")
+            st.text(classification_report(y_test, y_pred))
+
+            cm = confusion_matrix(y_test, y_pred)
+            st.subheader("Confusion Matrix")
+            fig_cm, ax = plt.subplots()
+            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+            st.pyplot(fig_cm)
+
+            if hasattr(model, "predict_proba"):
+                y_prob = model.predict_proba(X_test)
+                st.subheader("ROC Curve")
+                fig_roc, ax = plt.subplots()
+                for i in range(y_prob.shape[1]):
+                    fpr, tpr, _ = roc_curve(y_test == i, y_prob[:, i])
+                    ax.plot(fpr, tpr, label=f"Class {i} (AUC: {auc(fpr, tpr):.2f})")
+                ax.plot([0, 1], [0, 1], 'k--')
+                ax.set_xlabel("False Positive Rate")
+                ax.set_ylabel("True Positive Rate")
+                ax.legend()
+                st.pyplot(fig_roc)
 
     elif page == "DL Models":
         st.title("Deep Learning Models")
-        st.write("Training deep learning models with time-domain features...")
-
-        # Deep Learning Model (e.g., Simple MLP)
-        st.subheader("Feedforward Neural Network (MLP)")
-        X = df[numeric_cols].values
-        y = pd.get_dummies(df['fault_type']).values
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-        model = Sequential()
-        model.add(Dense(128, input_dim=X_train.shape[1], activation='relu'))
-        model.add(Dropout(0.2))
-        model.add(Dense(64, activation='relu'))
-        model.add(Dense(y_train.shape[1], activation='softmax'))
-
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-        # Model training
-        history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test), verbose=1)
-
-        # Plot training history
-        st.subheader("Training History")
-        fig, ax = plt.subplots()
-        ax.plot(history.history['accuracy'], label='Train Accuracy')
-        ax.plot(history.history['val_accuracy'], label='Val Accuracy')
-        ax.set_title("Accuracy Over Epochs")
-        ax.set_xlabel("Epochs")
-        ax.set_ylabel("Accuracy")
-        ax.legend()
-        st.pyplot(fig)
+        st.write("Coming soon: 20 Deep Learning models with training visualization")
 
     elif page == "Federated Learning":
         st.title("Federated Learning Setup")
-        st.write("Setting up Federated Learning models...")
-
-        # Example Federated Learning using Flower
-        def get_model():
-            model = tf.keras.Sequential([
-                tf.keras.layers.Dense(128, activation='relu', input_shape=(X_train.shape[1],)),
-                tf.keras.layers.Dropout(0.2),
-                tf.keras.layers.Dense(64, activation='relu'),
-                tf.keras.layers.Dense(y_train.shape[1], activation='softmax')
-            ])
-            model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-            return model
-
-        # Federated Learning strategy
-        strategy = fl.server.strategy.FedAvg(
-            fraction_fit=0.5,  # 50% of clients participate in each round
-            fraction_evaluate=0.5,
-            min_fit_clients=10,
-            min_eval_clients=5,
-            min_available_clients=10
-        )
-
-        # Setup federated learning simulation (details omitted)
-        st.write("Federated learning setup is in progress...")
-
+        st.write("Coming soon: 20 FL simulations using selected models")
 else:
     st.info("Please enter a valid GitHub URL or upload a file to begin.")
