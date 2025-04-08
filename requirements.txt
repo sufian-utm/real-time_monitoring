@@ -9,3 +9,4 @@ streamlit
 plotly
 tensorflow
 flwr
+xgboost
