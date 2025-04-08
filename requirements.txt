@@ -1,14 +1,27 @@
+# Core dependencies
 numpy>=1.26
 pandas>=2.2
 matplotlib>=3.7
 seaborn>=0.12
 scikit-learn>=1.4
-shap
-torch
-streamlit
-plotly
-tensorflow
-flwr
-xgboost
-lightgbm
-catboost
+plotly>=5.18
+streamlit>=1.32
+
+# ML and visualization
+shap>=0.44
+xgboost>=2.0
+lightgbm>=4.0
+catboost>=1.2
+
+# DL frameworks
+tensorflow>=2.15
+torch>=2.2
+torchaudio>=2.2
+torchvision>=0.17
+
+# Federated Learning
+flwr>=1.8
+
+# Optional but recommended
+joblib
+scipy
