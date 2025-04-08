@@ -4,3 +4,6 @@ matplotlib
 seaborn
 plotly
 scikit-learn
+xgboost
+lightgbm
+catboost
