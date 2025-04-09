@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc, accuracy_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
 from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -685,16 +685,28 @@ if df is not None:
             ml_model.fit(X_train, y_train_type)
             type_pred = ml_model.predict(X_test)
             type_acc = accuracy_score(y_test_type, type_pred)
+            type_prec = precision_score(y_test_type, type_pred, average='macro')
+            type_recall = recall_score(y_test_type, type_pred, average='macro')
+            type_f1 = f1_score(y_test_type, type_pred, average='macro')
     
             ml_model.fit(X_train, y_train_size)
             size_pred = ml_model.predict(X_test)
             size_acc = accuracy_score(y_test_size, size_pred)
+            size_prec = precision_score(y_test_size, size_pred, average='macro')
+            size_recall = recall_score(y_test_size, size_pred, average='macro')
+            size_f1 = f1_score(y_test_size, size_pred, average='macro')
     
             duration = time.time() - start
             comparison_data.append({
                 "Model": model_name,
                 "Type Accuracy": type_acc,
                 "Size Accuracy": size_acc,
+                "Type Precision": type_prec,
+                "Size Precision": size_prec,
+                "Type Recall": type_recall,
+                "Size Recall": size_recall,
+                "Type F1": type_f1,
+                "Size F1": size_f1,
                 "Train Time (s)": round(duration, 2),
                 "Model Type": "ML"
             })
