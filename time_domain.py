@@ -9,7 +9,7 @@ from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
-from sklearn.linear_model import Lasso
+from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import (
     SelectKBest, f_classif, RFE, VarianceThreshold, mutual_info_classif, chi2, SelectFromModel, SelectPercentile
@@ -165,13 +165,28 @@ if df is not None:
         # Method 2: Recursive Feature Elimination (RFE)
         elif selected_method == "Recursive Feature Elimination (RFE)":
             st.write("Selecting features using Recursive Feature Elimination (RFE)...")
-            rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            rfe = RFE(rf, n_features_to_select=10)
+
+            estimator = LogisticRegression(solver="liblinear")
+            num_features_to_select = min(10, X.shape[1])  # Select top 10 or fewer if less features
+            selector = RFE(estimator, n_features_to_select=num_features_to_select)
+            selector.fit(X, y)
+            selected_features = X.columns[selector.support_]
+            st.write("Top 10 Selected Features:", list(selected_features))
             
-            # Plot RFE Ranking
-            ranking = rfe.ranking_
-            ranking_scores = [1 / r if r != 0 else 0 for r in ranking]  # Inverse to show higher is better
-            plot_feature_selection_scores(ranking_scores, X.columns, title="RFE Feature Ranking (Inverse of Rank)")
+            # Plot rankings
+            rankings = selector.ranking_
+            ranking_df = pd.DataFrame({
+                "Feature": X.columns,
+                "Ranking": rankings,
+                "Selected": selector.support_
+            }).sort_values("Ranking")
+        
+            fig, ax = plt.subplots(figsize=(10, 5))
+            bars = ax.barh(ranking_df["Feature"], ranking_df["Ranking"],
+                           color=["green" if sel else "red" for sel in ranking_df["Selected"]])
+            ax.set_xlabel("RFE Ranking (1 = Best)")
+            ax.set_title("RFE Feature Ranking")
+            st.pyplot(fig)
             
             X_selected = rfe.fit_transform(X_scaled, y)
             selected_features = X.columns[rfe.support_]
