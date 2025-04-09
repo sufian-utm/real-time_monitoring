@@ -298,7 +298,7 @@ if df is not None:
         X_selected = selector.transform(X)
         selected_features = X.columns[selector.get_support()].tolist()
 
-        st.subheader(f"Top {num_features} Selected Features")
+        st.subheader(f"Top {num_features} Selected Features - {feature_selection_method}")
         st.write(selected_features)
         
         # ML Models
