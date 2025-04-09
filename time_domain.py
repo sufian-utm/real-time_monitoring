@@ -298,7 +298,7 @@ if df is not None:
         # Add the same feature selection dropdown as in the "DL Models" section
         st.sidebar.header("🔍 Feature Selection")
         feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
-            "Recursive Feature Elimination (RFE)",
+            "Recursive Feature Elimination (RFE)", "Pearson Correlation",
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
             "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB"
         ])
@@ -353,6 +353,20 @@ if df is not None:
             top_indices = np.argsort(variances)[::-1][:num_features]
             X_selected = X.iloc[:, top_indices]
             selected_features = X.columns[top_indices].tolist()
+        elif feature_selection_method == "Pearson Correlation":
+            # Convert y back to categorical labels if needed
+            if len(np.unique(y_type)) > 2:
+                st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
+        
+            correlations = []
+            for i, feature in enumerate(X.columns):
+                corr = np.corrcoef(X_scaled[:, i], y_type)[0, 1]
+                correlations.append(abs(corr))
+        
+            plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target")
+            top_indices = np.argsort(correlations)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices]
         
         # Determine selected features if not already assigned
         if 'selected_features' not in locals():
