@@ -264,12 +264,12 @@ if df is not None:
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
             "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB"
         ])
-        num_features = st.sidebar.slider("Number of Features", 5, 30, 10)
+        num_features = st.sidebar.slider("Number of Features", 5, 25, 10)
         
         # Feature Selection Method
         if feature_selection_method == "SelectKBest (ANOVA F-statistic)":
             selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
-            X_selected = selector.transform(X)
+            X_selected = selector.transform(X)            
         elif feature_selection_method == "Recursive Feature Elimination (RFE)":
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
             selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)
