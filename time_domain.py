@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
-from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
 from sklearn.linear_model import Lasso
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import (
@@ -295,8 +295,10 @@ if df is not None:
             selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
             X_selected = selector.transform(X)
         elif feature_selection_method == "Chi-Square":
-            selector = SelectKBest(chi2, k=num_features).fit(X, y_type)
-            X_selected = selector.transform(X)
+            scaler = MinMaxScaler()
+            X_scaled = scaler.fit_transform(X)
+            selector = SelectKBest(score_func=chi2, k=k)
+            X_selected = selector.fit_transform(X_scaled, y)
         elif feature_selection_method == "ANOVA F-statistic":
             selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
             X_selected = selector.transform(X)
