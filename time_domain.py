@@ -98,7 +98,8 @@ def build_model(input_shape, type_output, size_output, model_type):
         x = Conv1D(32, 3, activation='relu')(x)
         x = Bidirectional(GRU(64))(x)
     elif model_type == "CNN+Attention":
-        x = Conv1D()(x)  # Apply custom attention layer
+        x = Conv1D(filters=64, kernel_size=3, activation='relu')(x)
+        x = Attention1D()(x)
     else:
         x = Flatten()(x)
     
