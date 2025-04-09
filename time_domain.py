@@ -580,13 +580,6 @@ if df is not None:
             )
             return model
 
-        # Model Selection
-        st.header("🧠 Deep Learning Model")
-        model_type = st.selectbox("Select DL Model", [
-            "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
-            "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
-        ])
-        
         # Model checkpoint callback
         checkpoint_cb = ModelCheckpoint('best_model.weights.h5', save_best_only=True, save_weights_only=True)
         
@@ -642,9 +635,6 @@ if df is not None:
             ax[1, 1].legend(); ax[1, 1].set_title("Size Loss")
             
             st.pyplot(fig)
-
-    elif page == "Federated Learning":
-        st.title("Federated Learning Setup")
-        st.write("Coming soon: 20 FL simulations using selected models")
+            
 else:
     st.info("Please enter a valid GitHub URL or upload a file to begin.")
