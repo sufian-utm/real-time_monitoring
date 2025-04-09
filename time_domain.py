@@ -268,7 +268,8 @@ if df is not None:
         
         # Feature Selection Method
         if feature_selection_method == "SelectKBest (ANOVA F-statistic)":
-            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)        
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)   
+            st.text(f"selector: {selector}")     
         elif feature_selection_method == "Recursive Feature Elimination (RFE)":
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
             selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)          
