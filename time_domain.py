@@ -126,7 +126,7 @@ if df is not None:
             "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)",
             "Mutual Information", "Chi-Square", "ANOVA F-statistic",  
-            "Linear Discriminant Analysis(LDA)", "GaussianNB"
+            "K-Nearest Neighbors (KNN)", "GaussianNB"
         ])
 
         # Method 1: SelectKBest (ANOVA F-statistic)
@@ -212,13 +212,25 @@ if df is not None:
             selected_features = [column for column in X.columns if corr_matrix[column].abs().max() < threshold]
             st.write(f"Features with correlation below {threshold}:", selected_features)
             
-        # Method 11: Linear Discriminant Analysis(LDA)
-        elif selected_method == "Linear Discriminant Analysis(LDA)":
-            st.write("Selecting features using Linear Discriminant Analysis...")
-            lda = LinearDiscriminantAnalysis()
-            X_selected = lda.fit_transform(X_scaled, y)
-            selected_features = X.columns[lda.components_]
-            st.write("Top 10 Features by LDA:", selected_features)
+        # Method 11: K-Nearest Neighbors (KNN)
+        elif selected_method == "K-Nearest Neighbors (KNN)":
+            st.write("Selecting features using K-Nearest Neighbors (KNN)...")
+            
+            # Initialize KNN and fit the model
+            knn = KNeighborsClassifier(n_neighbors=5)  # Adjust n_neighbors as necessary
+            knn.fit(X_scaled, y)
+            
+            # Use Permutation Importance to rank features
+            from sklearn.inspection import permutation_importance
+            
+            result = permutation_importance(knn, X_scaled, y, n_repeats=10, random_state=42)
+            importances = result.importances_mean
+            
+            # Get top 10 features based on importance
+            top_features = np.argsort(importances)[::-1][:10]
+            selected_features = X.columns[top_features]
+            
+            st.write("Top 10 Features based on KNN:", selected_features)
     
         # Method 12: GaussianNB
         elif selected_method == "GaussianNB":
