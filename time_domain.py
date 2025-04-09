@@ -61,7 +61,26 @@ def plot_feature_selection_scores(scores, feature_names, title="Feature Selectio
     plt.tight_layout()
     st.pyplot(plt)
     plt.close()
-    
+
+# Shared Variables and Constants
+# ML Models
+ml_models = {
+    "Logistic Regression": LogisticRegression(max_iter=1000),
+    "Random Forest": RandomForestClassifier(),
+    "SVM": SVC(probability=True),
+    "KNN": KNeighborsClassifier(),
+    "Decision Tree": DecisionTreeClassifier(),
+    "Gradient Boosting": GradientBoostingClassifier(),
+    "Extra Trees": ExtraTreesClassifier(),
+    "AdaBoost": AdaBoostClassifier(),
+    "Linear SVC": LinearSVC(),
+    "Passive Aggressive": PassiveAggressiveClassifier(),
+    }
+dl_models = [
+    "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
+    "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
+    ]
+
 uploaded_file = st.file_uploader("Or upload a local CSV file", type=["csv"])
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
@@ -415,21 +434,7 @@ if df is not None:
         st.subheader(f"Top {num_features} Selected Features - {feature_selection_method}")
         st.write(selected_features)
         
-        # ML Models
-        models = {
-            "Logistic Regression": LogisticRegression(max_iter=1000),
-            "Random Forest": RandomForestClassifier(),
-            "SVM": SVC(probability=True),
-            "KNN": KNeighborsClassifier(),
-            "Decision Tree": DecisionTreeClassifier(),
-            "Gradient Boosting": GradientBoostingClassifier(),
-            "Extra Trees": ExtraTreesClassifier(),
-            "AdaBoost": AdaBoostClassifier(),
-            "Linear SVC": LinearSVC(),
-            "Passive Aggressive": PassiveAggressiveClassifier(),
-        }
-
-        selected_model = st.selectbox("Choose ML Model", options=list(models.keys()), key="ml_model_selectbox")
+        selected_model = st.selectbox("Choose ML Model", options=list(ml_models.keys()), key="ml_model_selectbox")
         model = models[selected_model]
 
         if st.button("Train and Evaluate"):
@@ -512,10 +517,7 @@ if df is not None:
     
         # Model Selection
         st.header("🧠 Deep Learning Model")
-        model_type = st.selectbox("Select DL Model", [
-            "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
-            "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
-            ],
+        model_type = st.selectbox("Select DL Model", dl_models,
             key="dl_model_selectbox"
         )
     
@@ -692,10 +694,7 @@ if df is not None:
         st.write(selected_features)
     
         selected_ml_models = st.multiselect("Choose ML Models to Compare", list(models.keys()), default=["Random Forest", "SVM"])
-        selected_dl_models = st.multiselect("Choose DL Models to Compare", [
-            "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D", "Transformer1D", 
-            "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
-        ], default=["CNN1D", "LSTM1D"])
+        selected_dl_models = st.multiselect("Choose DL Models to Compare", dl_models, default=["CNN1D", "LSTM1D"])
     
         comparison_data = []
     
