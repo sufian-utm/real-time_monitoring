@@ -297,7 +297,7 @@ if df is not None:
         elif feature_selection_method == "Chi-Square":
             scaler = MinMaxScaler()
             X_scaled = scaler.fit_transform(X)
-            selector = SelectKBest(score_func=chi2, k=k)
+            selector = SelectKBest(score_func=chi2, k=num_features)
             X_selected = selector.fit_transform(X_scaled, y)
         elif feature_selection_method == "ANOVA F-statistic":
             selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
