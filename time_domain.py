@@ -35,7 +35,7 @@ st.set_page_config(page_title="Feature Explorer", layout="wide")
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Feature Visualizer", "Feature Selection", "ML Classification", "DL Models"])
+page = st.sidebar.radio("Go to", ["Feature Visualizer", "Feature Selection", "ML Classification", "DL Models", "Compare Models"])
 
 # Function to load data
 def load_data():
@@ -75,7 +75,7 @@ if df is not None:
 
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.drop(['fault_size', 'Unnamed: 0'], errors='ignore')
 
-    if page == "ML Classification" or page == "DL Models":
+    if page == "ML Classification" or page == "DL Models" or "Compare Models":
         target_col_type = "fault_type"
         target_col_size = "fault_size"
 
@@ -683,6 +683,85 @@ if df is not None:
             ax[1, 1].legend(); ax[1, 1].set_title("Size Loss")
             
             st.pyplot(fig)
-            
+
+    elif page == "Compare Models":
+        st.title("📊 Compare ML and DL Models")
+    
+        st.subheader("Selected Features")
+        st.write(f"Top {num_features} features selected by: **{feature_selection_method}**")
+        st.write(selected_features)
+    
+        selected_ml_models = st.multiselect("Choose ML Models to Compare", list(models.keys()), default=["Random Forest", "SVM"])
+        selected_dl_models = st.multiselect("Choose DL Models to Compare", [
+            "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D", "Transformer1D", 
+            "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
+        ], default=["CNN1D", "LSTM1D"])
+    
+        comparison_data = []
+    
+        # --- Compare ML Models ---
+        st.header("⚙️ Machine Learning Models")
+        for model_name in selected_ml_models:
+            ml_model = models[model_name]
+            start = time.time()
+    
+            ml_model.fit(X_train, y_train_type)
+            type_pred = ml_model.predict(X_test)
+            type_acc = accuracy_score(y_test_type, type_pred)
+    
+            ml_model.fit(X_train, y_train_size)
+            size_pred = ml_model.predict(X_test)
+            size_acc = accuracy_score(y_test_size, size_pred)
+    
+            duration = time.time() - start
+            comparison_data.append({
+                "Model": model_name,
+                "Type Accuracy": type_acc,
+                "Size Accuracy": size_acc,
+                "Train Time (s)": round(duration, 2),
+                "Model Type": "ML"
+            })
+    
+        # --- Compare DL Models ---
+        st.header("🧠 Deep Learning Models")
+    
+        for model_name in selected_dl_models:
+            dl_model = build_model(X_train.shape[1:], y_type_train, y_size_train, model_name)
+            start = time.time()
+            history = dl_model.fit(
+                X_train, {"type_output": y_type_train, "size_output": y_size_train},
+                validation_data=(X_test, {"type_output": y_type_test, "size_output": y_size_test}),
+                epochs=5, batch_size=32, verbose=0
+            )
+            duration = time.time() - start
+            eval_results = dl_model.evaluate(X_test, {"type_output": y_type_test, "size_output": y_size_test}, verbose=0)
+    
+            comparison_data.append({
+                "Model": model_name,
+                "Type Accuracy": eval_results[3],
+                "Size Accuracy": eval_results[4],
+                "Train Time (s)": round(duration, 2),
+                "Model Type": "DL"
+            })
+    
+        # --- Results Table ---
+        st.subheader("📋 Model Comparison Table")
+        results_df = pd.DataFrame(comparison_data).sort_values(by="Type Accuracy", ascending=False)
+        st.dataframe(results_df)
+    
+        # --- Bar Charts ---
+        st.subheader("📊 Accuracy Comparison")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        results_df.plot.bar(x="Model", y=["Type Accuracy", "Size Accuracy"], ax=ax)
+        ax.set_ylabel("Accuracy")
+        st.pyplot(fig)
+    
+        st.subheader("⏱️ Training Time Comparison")
+        fig, ax = plt.subplots(figsize=(10, 4))
+        results_df.plot.bar(x="Model", y="Train Time (s)", ax=ax, color='orange')
+        ax.set_ylabel("Time (s)")
+        st.pyplot(fig)
+
+
 else:
     st.info("Please enter a valid GitHub URL or upload a file to begin.")
