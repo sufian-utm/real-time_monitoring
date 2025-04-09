@@ -429,7 +429,7 @@ if df is not None:
             "Passive Aggressive": PassiveAggressiveClassifier(),
         }
 
-        selected_model = st.selectbox("Choose ML Model", options=list(models.keys()))
+        selected_model = st.selectbox("Choose ML Model", options=list(models.keys()), key="ml_model_selectbox")
         model = models[selected_model]
 
         if st.button("Train and Evaluate"):
@@ -515,7 +515,9 @@ if df is not None:
         model_type = st.selectbox("Select DL Model", [
             "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
             "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
-        ])
+            ],
+            key="dl_model_selectbox"
+        )
     
         # Custom Attention Layer
         class Attention1D(tf.keras.layers.Layer):
