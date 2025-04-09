@@ -24,7 +24,7 @@ st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", ["Feature Visualizer", "ML Classification", "DL Models", "Federated Learning"])
 
 # Load data from GitHub or local file
-@st.cache_data
+# @st.cache_data
 def load_data():
     url = st.text_input("Enter CSV URL from GitHub or upload a file:",
                         value="https://raw.githubusercontent.com/sufian-utm/real-time_monitoring/main/data/cwru/12k_DE_td_features.csv")
