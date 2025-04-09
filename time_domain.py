@@ -28,6 +28,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, LSTM, GRU, Bidirectional, Dropout, Input
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 # Set Streamlit page config
 st.set_page_config(page_title="Feature Explorer", layout="wide")
@@ -492,7 +493,7 @@ if df is not None:
     elif page == "DL Models":
         st.subheader(f"Top {num_features} Selected Features - {feature_selection_method}")
         st.write(selected_features)
-    
+             
         # Preprocessing
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X_selected)
@@ -516,7 +517,20 @@ if df is not None:
             "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
         ])
     
-        def build_model(input_shape, type_output, size_output):
+        # Compile model with additional metrics
+        def compile_model(model, type_output, size_output):
+            model.compile(
+                optimizer=Adam(),
+                loss={"type_output": "categorical_crossentropy", "size_output": "categorical_crossentropy"},
+                metrics={
+                    "type_output": ["accuracy", "Precision", "Recall", "AUC"],
+                    "size_output": ["accuracy", "Precision", "Recall", "AUC"]
+                }
+            )
+            return model
+        
+        # Build model based on selected architecture
+        def build_model(input_shape, type_output, size_output, model_type):
             model = Sequential()
             if model_type == "MLP":
                 model.add(Input(shape=input_shape))
@@ -557,55 +571,75 @@ if df is not None:
                 return compile_model(model, type_output, size_output)
             else:
                 model.add(Flatten(input_shape=input_shape))
-    
+        
             model.add(Dense(64, activation='relu'))
             model.add(Dropout(0.3))
             type_out = Dense(type_output.shape[1], activation='softmax', name='type_output')(model.output)
             size_out = Dense(size_output.shape[1], activation='softmax', name='size_output')(model.output)
             model = tf.keras.Model(inputs=model.input, outputs=[type_out, size_out])
             return compile_model(model, type_output, size_output)
-    
-        def compile_model(model, type_output, size_output):
-            model.compile(
-                optimizer=Adam(),
-                loss={"type_output": "categorical_crossentropy", "size_output": "categorical_crossentropy"},
-                metrics={"type_output": "accuracy", "size_output": "accuracy"}
-            )
-            return model
-    
+
+        # Model Selection
+        st.header("🧠 Deep Learning Model")
+        model_type = st.selectbox("Select DL Model", [
+            "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
+            "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
+        ])
+        
+        # Model checkpoint callback
+        checkpoint_cb = ModelCheckpoint('best_model.h5', save_best_only=True, save_weights_only=True)
+        
         # Training Button
         if st.button("🚀 Train Model"):
-            model = build_model(X_train.shape[1:], y_type_train, y_size_train)
+            model = build_model(X_train.shape[1:], y_type_train, y_size_train, model_type)
+            
+            # Train with progress bar
+            progress_bar = st.progress(0)  # Streamlit progress bar
+            
             history = model.fit(
                 X_train, {"type_output": y_type_train, "size_output": y_size_train},
                 validation_data=(X_test, {"type_output": y_type_test, "size_output": y_size_test}),
-                epochs=10, batch_size=32, verbose=1
+                epochs=10, batch_size=32, verbose=1,
+                callbacks=[checkpoint_cb],
+                steps_per_epoch=len(X_train) // 32
             )
-    
+            
             st.success("✅ Training complete.")
             st.subheader("📊 Evaluation")
             loss, type_acc, size_acc = model.evaluate(X_test, {"type_output": y_type_test, "size_output": y_size_test}, verbose=0)
             st.write(f"**Fault Type Accuracy:** {type_acc:.2f}")
             st.write(f"**Fault Size Accuracy:** {size_acc:.2f}")
-    
+            
+            # Detailed classification report
+            y_type_pred = model.predict(X_test)[0]
+            y_size_pred = model.predict(X_test)[1]
+            y_type_pred_labels = np.argmax(y_type_pred, axis=1)
+            y_size_pred_labels = np.argmax(y_size_pred, axis=1)
+            
+            type_report = classification_report(np.argmax(y_type_test, axis=1), y_type_pred_labels, target_names=ohe.categories_[0])
+            size_report = classification_report(np.argmax(y_size_test, axis=1), y_size_pred_labels, target_names=ohe.categories_[0])
+            
+            st.text("Fault Type Classification Report:\n" + type_report)
+            st.text("Fault Size Classification Report:\n" + size_report)
+            
             st.subheader("📈 Training History")
             fig, ax = plt.subplots(2, 2, figsize=(10, 6))
             ax[0, 0].plot(history.history['type_output_accuracy'], label='Train')
             ax[0, 0].plot(history.history['val_type_output_accuracy'], label='Val')
             ax[0, 0].legend(); ax[0, 0].set_title("Type Accuracy")
-    
+            
             ax[0, 1].plot(history.history['size_output_accuracy'], label='Train')
             ax[0, 1].plot(history.history['val_size_output_accuracy'], label='Val')
             ax[0, 1].legend(); ax[0, 1].set_title("Size Accuracy")
-    
+            
             ax[1, 0].plot(history.history['type_output_loss'], label='Train')
             ax[1, 0].plot(history.history['val_type_output_loss'], label='Val')
             ax[1, 0].legend(); ax[1, 0].set_title("Type Loss")
-    
+            
             ax[1, 1].plot(history.history['size_output_loss'], label='Train')
             ax[1, 1].plot(history.history['val_size_output_loss'], label='Val')
             ax[1, 1].legend(); ax[1, 1].set_title("Size Loss")
-    
+            
             st.pyplot(fig)
 
     elif page == "Federated Learning":
