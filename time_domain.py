@@ -473,7 +473,7 @@ if df is not None:
         st.write(selected_features)
         
         selected_model = st.selectbox("Choose ML Model", options=list(ml_models.keys()), key="ml_model_selectbox")
-        model = models[selected_model]
+        model = ml_models[selected_model]
 
         if st.button("Train and Evaluate"):
             model.fit(X_train, y_train_type)  # Train on fault type
@@ -670,7 +670,7 @@ if df is not None:
         st.write(f"Top {num_features} features selected by: **{feature_selection_method}**")
         st.write(selected_features)
     
-        selected_ml_models = st.multiselect("Choose ML Models to Compare", list(models.keys()), default=["Random Forest", "SVM"])
+        selected_ml_models = st.multiselect("Choose ML Models to Compare", list(ml_models.keys()), default=["Random Forest", "SVM"])
         selected_dl_models = st.multiselect("Choose DL Models to Compare", dl_models, default=["CNN1D", "LSTM1D"])
     
         comparison_data = []
@@ -678,7 +678,7 @@ if df is not None:
         # --- Compare ML Models ---
         st.header("⚙️ Machine Learning Models")
         for model_name in selected_ml_models:
-            ml_model = models[model_name]
+            ml_model = ml_models[model_name]
             start = time.time()
     
             ml_model.fit(X_train, y_train_type)
