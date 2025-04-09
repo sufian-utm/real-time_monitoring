@@ -133,7 +133,7 @@ if df is not None:
 
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.drop(['fault_size', 'Unnamed: 0'], errors='ignore')
 
-    if page == "ML Classification" or page == "DL Models" or "Compare Models":
+    if page == "ML Classification" or page == "DL Models" or page == "Compare Models":
         target_col_type = "fault_type"
         target_col_size = "fault_size"
 
