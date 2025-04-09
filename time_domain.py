@@ -7,14 +7,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.feature_selection import SelectKBest, f_classif, RFE, VarianceThreshold, mutual_info_classif, chi2
+from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
 from sklearn.linear_model import Lasso
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectFromModel
-from sklearn.feature_selection import SelectPercentile
-from sklearn.feature_selection import chi2
-from sklearn.feature_selection import f_classif
+from sklearn.feature_selection import (
+    SelectKBest, f_classif, RFE, VarianceThreshold, mutual_info_classif, chi2, SelectFromModel, SelectPercentile
+)
 from sklearn.ensemble import (
     RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, ExtraTreesClassifier, BaggingClassifier
 )
@@ -28,7 +26,6 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, LSTM, GRU, Bidirectional, Dropout, Input
 from tensorflow.keras.optimizers import Adam
-from sklearn.preprocessing import OneHotEncoder
 
 # Set Streamlit page config
 st.set_page_config(page_title="Feature Explorer", layout="wide")
@@ -316,7 +313,7 @@ if df is not None:
         fault_type_encoded = LabelEncoder().fit_transform(df['fault_type'])
         fault_size_encoded = LabelEncoder().fit_transform(df['fault_size'])
     
-        ohe = OneHotEncoder(sparse=False)
+        ohe = OneHotEncoder(sparse_output=False)
         y_type = ohe.fit_transform(fault_type_encoded.reshape(-1, 1))
         y_size = ohe.fit_transform(fault_size_encoded.reshape(-1, 1))
     
