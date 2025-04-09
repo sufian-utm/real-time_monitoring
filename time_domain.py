@@ -211,12 +211,24 @@ if df is not None:
         # Method 7: Chi-Square
         elif selected_method == "Chi-Square":
             st.write("Selecting features using Chi-Square test...")
-            X_chi2 = np.maximum(X_scaled, 0)  # Chi2 requires non-negative features
-            selector = SelectKBest(chi2, k='all')
+    
+            # Ensure X is non-negative for Chi-Square
+            X_chi2 = np.maximum(X_scaled, 0)  # Set any negative values to zero
+            
+            # Apply SelectKBest with chi2
+            selector = SelectKBest(chi2, k=10)
             selector.fit(X_chi2, y)
+            
+            # Get the scores for each feature
             scores = selector.scores_
+            
+            # Plot the feature selection scores
             plot_feature_selection_scores(scores, X.columns, title="Chi-Square Scores")
+            
+            # Get the top selected features
             top_indices = np.argsort(scores)[::-1][:10]
+            selected_features = X.columns[top_indices]
+            
             st.write("Top 10 Selected Features by Chi-Square:", selected_features)
 
         # Method 8: ANOVA F-statistic
