@@ -171,7 +171,6 @@ if df is not None:
             selector = RFE(estimator, n_features_to_select=num_features_to_select)
             selector.fit(X, y)
             selected_features = X.columns[selector.support_]
-            st.write("Top 10 Selected Features:", list(selected_features))
             
             # Plot rankings
             rankings = selector.ranking_
@@ -188,32 +187,28 @@ if df is not None:
             ax.set_title("RFE Feature Ranking")
             st.pyplot(fig)
             
-            X_selected = rfe.fit_transform(X_scaled, y)
-            selected_features = X.columns[rfe.support_]
             st.write("Top 10 Selected Features:", selected_features)
 
         # Method 3: VarianceThreshold
         elif selected_method == "VarianceThreshold":
             st.write("Selecting features using VarianceThreshold...")
-            selector = VarianceThreshold(threshold=0.1)
-            X_selected = selector.fit_transform(X_scaled)
-            selected_features = X.columns[selector.get_support()]
+
+            threshold = st.slider("Select Variance Threshold", min_value=0.0, max_value=1.0, value=0.01, step=0.01)
+            selector = VarianceThreshold(threshold=threshold)
+        
+            X_selected = selector.fit_transform(X)
+            selected_mask = selector.get_support()
+            selected_features = X.columns[selected_mask]
+            
             st.write("Top Features with Variance Threshold:", selected_features)
 
-            # Get variance of each feature
-            variances = selector.variances_
-            feature_names = X.columns
-            
-            # Create a color list for selected vs not selected
-            colors = ['green' if i in selector.get_support(indices=True) else 'red' for i in range(len(feature_names))]
-            
-            # Plot
+            # Plotting variances
+            feature_variances = X.var()
             fig, ax = plt.subplots(figsize=(10, 5))
-            ax.barh(feature_names, variances, color=colors)
-            ax.axvline(threshold, color='blue', linestyle='--', label=f'Threshold = {threshold:.4f}')
-            ax.set_title("Feature Variance (Green = Selected, Red = Dropped)")
-            ax.set_xlabel("Variance")
-            ax.set_ylabel("Feature")
+            feature_variances.plot(kind="bar", ax=ax, color=["green" if val else "red" for val in selected_mask])
+            ax.axhline(y=threshold, color="r", linestyle="--", label=f"Threshold = {threshold}")
+            ax.set_title("Feature Variances")
+            ax.set_ylabel("Variance")
             ax.legend()
             st.pyplot(fig)
         
