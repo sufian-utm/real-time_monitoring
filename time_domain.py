@@ -69,10 +69,12 @@ class Attention1D(tf.keras.layers.Layer):
         super(Attention1D, self).__init__()
         self.score_dense = tf.keras.layers.Dense(1, activation='tanh')
 
-    def call(self, inputs):
-        score = self.score_dense(inputs)  # Shape: (batch, time, 1)
-        weights = tf.nn.softmax(score, axis=1)  # Shape: (batch, time, 1)
-        output = tf.reduce_sum(inputs * weights, axis=1)  # Shape: (batch, features)
+    def call(self, inputs, return_weights=False):
+        score = self.score_dense(inputs)
+        weights = tf.nn.softmax(score, axis=1)
+        output = tf.reduce_sum(inputs * weights, axis=1)
+        if return_weights:
+            return output, weights
         return output
 
 # Build the Model
