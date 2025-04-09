@@ -277,9 +277,7 @@ if df is not None:
         elif feature_selection_method == "Random Forest Feature Importance":
             selector = RFE(RandomForestClassifier(), n_features_to_select=num_features).fit(X, y_type)
         elif feature_selection_method == "L1-based (Lasso)":
-            lasso = Lasso(alpha=0.01)
-            lasso.fit(X_scaled, y)
-            selected_features = X.columns[np.abs(lasso.coef_) > 0]
+            selector = Lasso(alpha=0.01).fit(X, y_type)
         elif feature_selection_method == "Mutual Information":
             selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
         elif feature_selection_method == "Chi-Square":
