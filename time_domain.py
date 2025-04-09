@@ -588,7 +588,7 @@ if df is not None:
         ])
         
         # Model checkpoint callback
-        checkpoint_cb = ModelCheckpoint('best_model.h5', save_best_only=True, save_weights_only=True)
+        checkpoint_cb = ModelCheckpoint('best_model.weights.h5', save_best_only=True, save_weights_only=True)
         
         # Training Button
         if st.button("🚀 Train Model"):
