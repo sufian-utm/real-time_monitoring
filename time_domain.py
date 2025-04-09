@@ -48,13 +48,13 @@ def load_data():
             st.error("Could not load from URL.")
     return None
 
-def plot_feature_selection_scores(scores, feature_names, title="Feature Selection Scores"):
+def plot_feature_selection_scores(scores, feature_names, title="Feature Selection Scores", num=num_features):
     sorted_idx = np.argsort(scores)[::-1]
     sorted_scores = np.array(scores)[sorted_idx]
     sorted_features = np.array(feature_names)[sorted_idx]
 
     plt.figure(figsize=(10, 6))
-    plt.barh(sorted_features[:][::-1], sorted_scores[:][::-1], color='skyblue')
+    plt.barh(sorted_features[:num][::-1], sorted_scores[:num][::-1], color='skyblue')
     plt.xlabel("Score")
     plt.title(title)
     plt.tight_layout()
@@ -143,7 +143,10 @@ if df is not None:
             "Mutual Information", "Chi-Square", "ANOVA F-statistic",  
             "K-Nearest Neighbors (KNN)", "GaussianNB"
         ])
-
+        
+        # Add numbr of features selection bar
+        num_features = st.sidebar.slider("Number of Features", 5, 25, 10)
+        
         # Method 1: SelectKBest (ANOVA F-statistic)
         if selected_method == "Pearson Correlation":
             st.write("Selecting features based on Pearson correlation with the target...")
@@ -157,17 +160,17 @@ if df is not None:
                 corr = np.corrcoef(X_scaled[:, i], y)[0, 1]
                 correlations.append(abs(corr))
         
-            plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target")
+            plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target", num=num_features)
             top_indices = np.argsort(correlations)[::-1][:]
             selected_features = X.columns[top_indices]
-            st.write("Top 10 Features by Pearson Correlation:", selected_features)
+            st.write(f"Top {num_features} Features by Pearson Correlation:", selected_features)
 
         # Method 2: Recursive Feature Elimination (RFE)
         elif selected_method == "Recursive Feature Elimination (RFE)":
             st.write("Selecting features using Recursive Feature Elimination (RFE)...")
 
             estimator = LogisticRegression(solver="liblinear")
-            num_features_to_select = min(10, X.shape[1])  # Select top 10 or fewer if less features
+            num_features_to_select = min(num_features, X.shape[1])  # Select top 10 or fewer if less features
             selector = RFE(estimator, n_features_to_select=num_features_to_select)
             selector.fit(X, y)
             selected_features = X.columns[selector.support_]
@@ -187,7 +190,7 @@ if df is not None:
             ax.set_title("RFE Feature Ranking")
             st.pyplot(fig)
             
-            st.write("Top 10 Selected Features:", selected_features)
+            st.write(f"Top {num_features} Selected Features:", selected_features)
 
         # Method 3: VarianceThreshold
         elif selected_method == "VarianceThreshold":
@@ -200,7 +203,7 @@ if df is not None:
             selected_mask = selector.get_support()
             selected_features = X.columns[selected_mask]
             
-            st.write("Top Features with Variance Threshold:", selected_features)
+            st.write(f"Top {num_features} Features with Variance Threshold:", selected_features)
 
             # Plotting variances
             feature_variances = X.var()
@@ -218,10 +221,10 @@ if df is not None:
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
             rf.fit(X_scaled, y)
             importance = rf.feature_importances_
-            plot_feature_selection_scores(importance, X.columns, title="Random Forest Feature Importance")
+            plot_feature_selection_scores(importance, X.columns, title="Random Forest Feature Importance", num=num_features)
             indices = np.argsort(importance)[::-1]
             selected_features = X.columns[indices][:10]
-            st.write("Top 10 Important Features:", selected_features)
+            st.write(f"Top {num_features} Important Features:", selected_features)
             
         # Method 5: L1-based (Lasso) Regularization
         elif selected_method == "L1-based (Lasso)":
@@ -237,10 +240,10 @@ if df is not None:
         elif selected_method == "Mutual Information":
             st.write("Selecting features using Mutual Information...")
             mutual_info = mutual_info_classif(X_scaled, y)
-            plot_feature_selection_scores(mutual_info, X.columns, title="Mutual Information Scores")
+            plot_feature_selection_scores(mutual_info, X.columns, title="Mutual Information Scores", num=num_features)
             indices = np.argsort(mutual_info)[::-1]
-            selected_features = X.columns[indices][:10]
-            st.write("Top 10 Features by Mutual Information:", selected_features)
+            selected_features = X.columns[indices][:num_features]
+            st.write(f"Top {num_features} Features by Mutual Information:", selected_features)
 
         # Method 7: Chi-Square
         elif selected_method == "Chi-Square":
@@ -257,13 +260,13 @@ if df is not None:
             scores = selector.scores_
             
             # Plot the feature selection scores
-            plot_feature_selection_scores(scores, X.columns, title="Chi-Square Scores")
+            plot_feature_selection_scores(scores, X.columns, title="Chi-Square Scores", num=num_features)
             
             # Get the top selected features
-            top_indices = np.argsort(scores)[::-1][:10]
+            top_indices = np.argsort(scores)[::-1][:num_features]
             selected_features = X.columns[top_indices]
             
-            st.write("Top 10 Selected Features by Chi-Square:", selected_features)
+            st.write(f"Top {num_features} Selected Features by Chi-Square:", selected_features)
 
         # Method 8: ANOVA F-statistic
         elif selected_method == "ANOVA F-statistic":
@@ -272,9 +275,9 @@ if df is not None:
             selector.fit(X_scaled, y)
             scores = selector.scores_
             plot_feature_selection_scores(scores, X.columns, title="ANOVA F-statistic Scores")
-            top_indices = np.argsort(scores)[::-1][:10]
+            top_indices = np.argsort(scores)[::-1][:num_features]
             selected_features = X.columns[top_indices]
-            st.write("Top 10 Features by ANOVA F-statistic:", selected_features)
+            st.write(f"Top {num_features} Features by ANOVA F-statistic:", selected_features)
             
         # Method 11: K-Nearest Neighbors (KNN)
         elif selected_method == "K-Nearest Neighbors (KNN)":
@@ -283,10 +286,10 @@ if df is not None:
             knn.fit(X_scaled, y)
             result = permutation_importance(knn, X_scaled, y, n_repeats=10, random_state=42)
             importances = result.importances_mean
-            plot_feature_selection_scores(importances, X.columns, title="Permutation Importance (KNN)")
-            top_features = np.argsort(importances)[::-1][:10]
+            plot_feature_selection_scores(importances, X.columns, title="Permutation Importance (KNN)", num=num_features)
+            top_features = np.argsort(importances)[::-1][:num_features]
             selected_features = X.columns[top_features]
-            st.write("Top 10 Features based on KNN:", selected_features)
+            st.write(f"Top {num_features} Features based on KNN:", selected_features)
     
         # Method 12: GaussianNB
         elif selected_method == "GaussianNB":
@@ -303,13 +306,13 @@ if df is not None:
             importance = np.abs(coefficients).sum(axis=0)
         
             # Plot the feature importance scores
-            plot_feature_selection_scores(importance, X.columns, title="GaussianNB Feature Importance Scores")
+            plot_feature_selection_scores(importance, X.columns, title="GaussianNB Feature Importance Scores", num=num_features)
         
             # Get top 10 features based on importance
-            top_features = np.argsort(importance)[::-1][:10]
+            top_features = np.argsort(importance)[::-1][:num_features]
             selected_features = X.columns[top_features]
 
-            st.write("Top Features by GaussianNB:", selected_features)
+            st.write(f"Top {num_features} Features by GaussianNB:", selected_features)
             
     elif page == "ML Classification":
         st.title("Machine Learning Classification Models")
