@@ -125,8 +125,8 @@ if df is not None:
         selected_method = st.selectbox("Select Feature Selection Method", options=[
             "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)",
-            "Mutual Information", "Chi-Square", "ANOVA F-statistic", "Univariate Feature Selection",
-            "Correlation-based Feature Selection"
+            "Mutual Information", "Chi-Square", "ANOVA F-statistic",  
+            "Linear Discriminant Analysis(LDA)", "GaussianNB"
         ])
 
         # Method 1: SelectKBest (ANOVA F-statistic)
@@ -211,7 +211,23 @@ if df is not None:
             threshold = st.slider("Set Correlation Threshold", 0.0, 1.0, 0.9)
             selected_features = [column for column in X.columns if corr_matrix[column].abs().max() < threshold]
             st.write(f"Features with correlation below {threshold}:", selected_features)
-
+            
+        # Method 11: Linear Discriminant Analysis(LDA)
+        elif selected_method == "Linear Discriminant Analysis(LDA)":
+            st.write("Selecting features using Linear Discriminant Analysis...")
+            lda = LinearDiscriminantAnalysis(n_components=10)
+            X_selected = lda.fit_transform(X_scaled, y)
+            selected_features = X.columns[lda.components_]
+            st.write("Top 10 Features by LDA:", selected_features)
+    
+        # Method 12: GaussianNB
+        elif selected_method == "GaussianNB":
+            st.write("Selecting features using Gaussian Naive Bayes...")
+            gnb = GaussianNB()
+            gnb.fit(X_scaled, y)
+            selected_features = X.columns[gnb.get_params()]
+            st.write("Top Features by GaussianNB:", selected_features)
+            
     elif page == "ML Classification":
         st.title("Machine Learning Classification Models")
 
