@@ -25,8 +25,8 @@ from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 from sklearn.inspection import permutation_importance
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, LSTM, GRU, Bidirectional, Dropout, Input
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dense, Dropout, LSTM, GRU, Bidirectional, Conv1D, MaxPooling1D, Flatten, Input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint
 
@@ -529,46 +529,46 @@ if df is not None:
         
         # Build the Model
         def build_model(input_shape, type_output, size_output, model_type):
-            model = Sequential()
+            inputs = Input(shape=input_shape)  # Use Functional API to define inputs
+            x = inputs  # Start with the input layer
+            
             if model_type == "MLP":
-                model.add(Input(shape=input_shape))
-                model.add(Flatten())
-                model.add(Dense(128, activation='relu'))
-            elif model_type == "CNN1D":
-                model.add(Conv1D(64, 3, activation='relu', input_shape=input_shape))
-                model.add(MaxPooling1D())
-                model.add(Flatten())
-            elif model_type == "LSTM1D":
-                model.add(LSTM(64, input_shape=input_shape))
-            elif model_type == "GRU1D":
-                model.add(GRU(64, input_shape=input_shape))
-            elif model_type == "BiLSTM1D":
-                model.add(Bidirectional(LSTM(64), input_shape=input_shape))
-            elif model_type == "ResNet1D":
-                input_layer = Input(shape=input_shape)
-                x = Conv1D(64, 3, activation='relu', padding='same')(input_layer)
-                x = Conv1D(64, 3, activation='relu', padding='same')(x)
-                x = tf.keras.layers.Add()([input_layer, x])
                 x = Flatten()(x)
-                model = Model(inputs=input_layer, outputs=x)
-                return compile_model(model, type_output, size_output)
+                x = Dense(128, activation='relu')(x)
+            elif model_type == "CNN1D":
+                x = Conv1D(64, 3, activation='relu')(x)
+                x = MaxPooling1D()(x)
+                x = Flatten()(x)
+            elif model_type == "LSTM1D":
+                x = LSTM(64)(x)
+            elif model_type == "GRU1D":
+                x = GRU(64)(x)
+            elif model_type == "BiLSTM1D":
+                x = Bidirectional(LSTM(64))(x)
+            elif model_type == "ResNet1D":
+                x = Conv1D(64, 3, activation='relu', padding='same')(x)
+                x = Conv1D(64, 3, activation='relu', padding='same')(x)
+                x = tf.keras.layers.Add()([inputs, x])  # Skip connection
+                x = Flatten()(x)
             elif model_type == "CNN+BiGRU":
-                model.add(Conv1D(32, 3, activation='relu', input_shape=input_shape))
-                model.add(Bidirectional(GRU(64)))
+                x = Conv1D(32, 3, activation='relu')(x)
+                x = Bidirectional(GRU(64))(x)
             elif model_type == "CNN+Attention":
-                inputs = Input(shape=input_shape)
-                x = Conv1D(64, 3, activation='relu')(inputs)
-                x = Attention1D()(x)  # Attention applied here
-                model = Model(inputs=inputs, outputs=x)
-                return compile_model(model, type_output, size_output)
+                x = Conv1D(64, 3, activation='relu')(x)
+                x = Attention1D()(x)  # Apply custom attention layer
             else:
-                model.add(Flatten(input_shape=input_shape))
-        
-            model.add(Dense(64, activation='relu'))
-            model.add(Dropout(0.3))
-            type_out = Dense(type_output.shape[1], activation='softmax', name='type_output')(model.output)
-            size_out = Dense(size_output.shape[1], activation='softmax', name='size_output')(model.output)
-            model = Model(inputs=model.input, outputs=[type_out, size_out])
+                x = Flatten()(x)
+            
+            x = Dense(64, activation='relu')(x)
+            x = Dropout(0.3)(x)
+            
+            # Outputs
+            type_out = Dense(type_output.shape[1], activation='softmax', name='type_output')(x)
+            size_out = Dense(size_output.shape[1], activation='softmax', name='size_output')(x)
+            
+            # Define model
+            model = Model(inputs=inputs, outputs=[type_out, size_out])
+            
             return compile_model(model, type_output, size_output)
         
         # Compile Model
