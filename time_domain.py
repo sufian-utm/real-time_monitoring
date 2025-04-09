@@ -65,10 +65,14 @@ def plot_feature_selection_scores(scores, feature_names, title="Feature Selectio
 
 # Custom Attention Layer
 class Attention1D(tf.keras.layers.Layer):
+    def __init__(self):
+        super(Attention1D, self).__init__()
+        self.score_dense = tf.keras.layers.Dense(1, activation='tanh')
+
     def call(self, inputs):
-        score = tf.keras.layers.Dense(1, activation='tanh')(inputs)
-        weights = tf.nn.softmax(score, axis=1)
-        output = tf.reduce_sum(inputs * weights, axis=1)
+        score = self.score_dense(inputs)  # Shape: (batch, time, 1)
+        weights = tf.nn.softmax(score, axis=1)  # Shape: (batch, time, 1)
+        output = tf.reduce_sum(inputs * weights, axis=1)  # Shape: (batch, features)
         return output
 
 # Build the Model
