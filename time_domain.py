@@ -808,13 +808,13 @@ if df is not None:
     
         # --- Results Table ---
         st.subheader("📋 Model Comparison Table")
-        results_df = pd.DataFrame(comparison_data).sort_values(by="Type Accuracy", ascending=False)
+        results_df = pd.DataFrame(comparison_data).sort_values(by="Type Acc.", ascending=False)
         st.dataframe(results_df)
     
         # --- Bar Charts ---
         st.subheader("📊 Accuracy Comparison")
         fig, ax = plt.subplots(figsize=(10, 5))
-        results_df.plot.bar(x="Model", y=["Type Accuracy", "Size Accuracy"], ax=ax)
+        results_df.plot.bar(x="Model", y=["Type Acc.", "Size Acc."], ax=ax)
         ax.set_ylabel("Accuracy")
         st.pyplot(fig)
     
