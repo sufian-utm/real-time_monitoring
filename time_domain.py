@@ -159,7 +159,7 @@ if df is not None:
 
             top_indices = np.argsort(correlations)[::-1][:num_features]
             X_selected = X.iloc[:, top_indices]
-            selected_features = X.columns[top_indices]
+            selected_features = X.columns[top_indices].tolist()
         
         # Determine selected features if not already assigned
         if 'selected_features' not in locals():
