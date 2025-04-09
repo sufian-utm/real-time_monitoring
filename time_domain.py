@@ -268,30 +268,61 @@ if df is not None:
         
         # Feature Selection Method
         if feature_selection_method == "SelectKBest (ANOVA F-statistic)":
-            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)   
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
         elif feature_selection_method == "Recursive Feature Elimination (RFE)":
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)          
+            selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
         elif feature_selection_method == "VarianceThreshold":
-            selector = VarianceThreshold(threshold=0.1).fit(X, y_type)
+            selector = VarianceThreshold(threshold=0.1).fit(X)
+            X_selected = selector.transform(X)
         elif feature_selection_method == "Random Forest Feature Importance":
-            selector = RFE(RandomForestClassifier(), n_features_to_select=num_features).fit(X, y_type)
+            rf = RandomForestClassifier()
+            rf.fit(X, y_type)
+            importances = rf.feature_importances_
+            top_indices = np.argsort(importances)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices].tolist()
         elif feature_selection_method == "L1-based (Lasso)":
-            selector = Lasso(alpha=0.01).fit(X, y_type)
+            lasso = Lasso(alpha=0.01)
+            lasso.fit(X, y_type)
+            mask = np.abs(lasso.coef_) > 0
+            selected_features = X.columns[mask].tolist()
+            X_selected = X[selected_features]
         elif feature_selection_method == "Mutual Information":
             selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
         elif feature_selection_method == "Chi-Square":
             selector = SelectKBest(chi2, k=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
         elif feature_selection_method == "ANOVA F-statistic":
             selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
         elif feature_selection_method == "K-Nearest Neighbors (KNN)":
-            selector = KNeighborsClassifier(n_neighbors=5).fit(X, y_type)
+            knn = KNeighborsClassifier(n_neighbors=5)
+            knn.fit(X, y_type)
+            from sklearn.inspection import permutation_importance
+            result = permutation_importance(knn, X, y_type, n_repeats=10, random_state=42)
+            importances = result.importances_mean
+            top_indices = np.argsort(importances)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices].tolist()
         elif feature_selection_method == "GaussianNB":
-            selector = GaussianNB().fit(X, y_type)
-
-        X_selected = selector.transform(X)
-        st.text(f"selector: {selector.get_support()}")
-        selected_features = X.columns[selector.get_support()].tolist()
+            gnb = GaussianNB()
+            gnb.fit(X, y_type)
+            # No built-in feature ranking; use variance as a proxy
+            variances = X.var()
+            top_indices = np.argsort(variances)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices].tolist()
+        
+        # Determine selected features if not already assigned
+        if 'selected_features' not in locals():
+            if isinstance(selector, TransformerMixin) and hasattr(selector, 'get_support'):
+                selected_features = X.columns[selector.get_support()].tolist()
+            else:
+                selected_features = X.columns[:X_selected.shape[1]].tolist()
 
         st.subheader(f"Top {num_features} Selected Features - {feature_selection_method}")
         st.write(selected_features)
