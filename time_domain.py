@@ -794,8 +794,8 @@ if df is not None:
     
             comparison_data.append({
                 "Model": model_name,
-                "Type Accuracy": eval_results[3],
-                "Size Accuracy": eval_results[4],
+                "Type Acc.": eval_results[3],
+                "Size Acc.": eval_results[4],
                 "Type Prec.": type_prec,
                 "Size Prec.": size_prec,
                 "Type Recall": type_recall,
