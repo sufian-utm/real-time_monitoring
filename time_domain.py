@@ -223,7 +223,7 @@ if df is not None:
             importance = rf.feature_importances_
             plot_feature_selection_scores(importance, X.columns, title="Random Forest Feature Importance", num=num_features)
             indices = np.argsort(importance)[::-1]
-            selected_features = X.columns[indices][:10]
+            selected_features = X.columns[indices][:num_features]
             st.write(f"Top {num_features} Important Features:", selected_features)
             
         # Method 5: L1-based (Lasso) Regularization
@@ -232,9 +232,9 @@ if df is not None:
             lasso = Lasso(alpha=0.01)
             lasso.fit(X_scaled, y)
             coef = np.abs(lasso.coef_)
-            plot_feature_selection_scores(coef, X.columns, title="Lasso Feature Coefficients")
-            selected_features = X.columns[coef > 0]
-            st.write("Top Selected Features with Lasso Regularization:", selected_features)
+            plot_feature_selection_scores(coef, X.columns, title="Lasso Feature Coefficients", num=num_features)
+            selected_features = X.columns[coef > 0][:num_features]
+            st.write(f"Top {num_features} Selected Features with Lasso Regularization:", selected_features)
 
         # Method 6: Mutual Information
         elif selected_method == "Mutual Information":
