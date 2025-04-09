@@ -283,7 +283,7 @@ if df is not None:
             selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
             st.text(f"selector: {selector}")
         elif feature_selection_method == "Chi-Square":
-            selector = SelectKBest(score_func=chi2, k=num_features).fit(X, y_type)
+            selector = SelectKBest(chi2, k=num_features).fit(X, y_type)
             st.text(f"selector: {selector}")
         elif feature_selection_method == "ANOVA F-statistic":
             selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
