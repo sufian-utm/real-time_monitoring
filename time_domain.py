@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
@@ -7,6 +8,13 @@ import plotly.graph_objects as go
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.feature_selection import SelectKBest, f_classif, RFE, VarianceThreshold, mutual_info_classif, chi2
+from sklearn.linear_model import Lasso
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import SelectFromModel
+from sklearn.feature_selection import SelectPercentile
+from sklearn.feature_selection import chi2
+from sklearn.feature_selection import f_classif
 from sklearn.ensemble import (
     RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier, ExtraTreesClassifier, BaggingClassifier
 )
@@ -17,14 +25,14 @@ from sklearn.neighbors import KNeighborsClassifier, NearestCentroid
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 
+# Set Streamlit page config
 st.set_page_config(page_title="Feature Explorer", layout="wide")
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Feature Visualizer", "ML Classification", "DL Models", "Federated Learning"])
+page = st.sidebar.radio("Go to", ["Feature Visualizer", "Feature Selection", "ML Classification", "DL Models", "Federated Learning"])
 
-# Load data from GitHub or local file
-# @st.cache_data
+# Function to load data
 def load_data():
     url = st.text_input("Enter CSV URL from GitHub or upload a file:",
                         value="https://raw.githubusercontent.com/sufian-utm/real-time_monitoring/main/data/cwru/12k_DE_td_features.csv")
@@ -99,6 +107,108 @@ if df is not None:
                                  labels={'index': 'Sample Index'})
                 fig_ts.update_layout(showlegend=False)
                 st.plotly_chart(fig_ts, use_container_width=True)
+
+    elif page == "Feature Selection":
+        st.title("Feature Selection Methods")
+
+        # Prepare Data
+        X = df[numeric_cols]
+        y = LabelEncoder().fit_transform(df['fault_type'])
+
+        # Feature Scaling
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+
+        st.subheader("Choose Feature Selection Method")
+        selected_method = st.selectbox("Select Feature Selection Method", options=[
+            "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
+            "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)",
+            "Mutual Information", "Chi-Square", "ANOVA F-statistic", "Univariate Feature Selection",
+            "Correlation-based Feature Selection"
+        ])
+
+        # Method 1: SelectKBest (ANOVA F-statistic)
+        if selected_method == "SelectKBest (ANOVA F-statistic)":
+            st.write("Selecting features using SelectKBest with ANOVA F-statistic...")
+            selector = SelectKBest(f_classif, k=10)
+            X_selected = selector.fit_transform(X_scaled, y)
+            selected_features = X.columns[selector.get_support()]
+            st.write("Top 10 Selected Features:", selected_features)
+
+        # Method 2: Recursive Feature Elimination (RFE)
+        elif selected_method == "Recursive Feature Elimination (RFE)":
+            st.write("Selecting features using Recursive Feature Elimination (RFE)...")
+            rf = RandomForestClassifier(n_estimators=100, random_state=42)
+            rfe = RFE(rf, n_features_to_select=10)
+            X_selected = rfe.fit_transform(X_scaled, y)
+            selected_features = X.columns[rfe.support_]
+            st.write("Top 10 Selected Features:", selected_features)
+
+        # Method 3: VarianceThreshold
+        elif selected_method == "VarianceThreshold":
+            st.write("Selecting features using VarianceThreshold...")
+            selector = VarianceThreshold(threshold=0.1)
+            X_selected = selector.fit_transform(X_scaled)
+            selected_features = X.columns[selector.get_support()]
+            st.write("Top Features with Variance Threshold:", selected_features)
+
+        # Method 4: Random Forest Feature Importance
+        elif selected_method == "Random Forest Feature Importance":
+            st.write("Selecting features using Random Forest Feature Importance...")
+            rf = RandomForestClassifier(n_estimators=100, random_state=42)
+            rf.fit(X_scaled, y)
+            importance = rf.feature_importances_
+            indices = np.argsort(importance)[::-1]
+            selected_features = X.columns[indices][:10]
+            st.write("Top 10 Important Features:", selected_features)
+
+        # Method 5: L1-based (Lasso) Regularization
+        elif selected_method == "L1-based (Lasso)":
+            st.write("Selecting features using Lasso (L1-based Regularization)...")
+            lasso = Lasso(alpha=0.01)
+            lasso.fit(X_scaled, y)
+            selected_features = X.columns[np.abs(lasso.coef_) > 0]
+            st.write("Top Selected Features with Lasso Regularization:", selected_features)
+
+        # Method 6: Mutual Information
+        elif selected_method == "Mutual Information":
+            st.write("Selecting features using Mutual Information...")
+            mutual_info = mutual_info_classif(X_scaled, y)
+            indices = np.argsort(mutual_info)[::-1]
+            selected_features = X.columns[indices][:10]
+            st.write("Top 10 Features by Mutual Information:", selected_features)
+
+        # Method 7: Chi-Square
+        elif selected_method == "Chi-Square":
+            st.write("Selecting features using Chi-Square test...")
+            chi2_selector = SelectKBest(chi2, k=10)
+            X_selected = chi2_selector.fit_transform(X_scaled, y)
+            selected_features = X.columns[chi2_selector.get_support()]
+            st.write("Top 10 Selected Features by Chi-Square:", selected_features)
+
+        # Method 8: ANOVA F-statistic
+        elif selected_method == "ANOVA F-statistic":
+            st.write("Selecting features using ANOVA F-statistic...")
+            selector = SelectKBest(f_classif, k=10)
+            X_selected = selector.fit_transform(X_scaled, y)
+            selected_features = X.columns[selector.get_support()]
+            st.write("Top 10 Features by ANOVA F-statistic:", selected_features)
+
+        # Method 9: Univariate Feature Selection
+        elif selected_method == "Univariate Feature Selection":
+            st.write("Selecting features using Univariate Feature Selection...")
+            selector = SelectPercentile(f_classif, percentile=10)
+            X_selected = selector.fit_transform(X_scaled, y)
+            selected_features = X.columns[selector.get_support()]
+            st.write("Top 10 Features by Univariate Feature Selection:", selected_features)
+
+        # Method 10: Correlation-based Feature Selection
+        elif selected_method == "Correlation-based Feature Selection":
+            st.write("Selecting features based on Correlation Threshold...")
+            corr_matrix = pd.DataFrame(X_scaled).corr()
+            threshold = st.slider("Set Correlation Threshold", 0.0, 1.0, 0.9)
+            selected_features = [column for column in X.columns if corr_matrix[column].abs().max() < threshold]
+            st.write(f"Features with correlation below {threshold}:", selected_features)
 
     elif page == "ML Classification":
         st.title("Machine Learning Classification Models")
