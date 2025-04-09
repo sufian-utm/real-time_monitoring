@@ -623,9 +623,18 @@ if df is not None:
             y_size_pred = model.predict(X_test)[1]
             y_type_pred_labels = np.argmax(y_type_pred, axis=1)
             y_size_pred_labels = np.argmax(y_size_pred, axis=1)
+
+            # Get the unique classes from the OneHotEncoder
+            fault_type_classes = ohe.categories_[0]  # for fault_type
+            fault_size_classes = ohe.categories_[0]  # for fault_size
             
-            type_report = classification_report(np.argmax(y_type_test, axis=1), y_type_pred_labels, target_names=ohe.categories_[0])
-            size_report = classification_report(np.argmax(y_size_test, axis=1), y_size_pred_labels, target_names=ohe.categories_[0])
+            # Generate classification reports with the correct number of labels
+            type_report = classification_report(np.argmax(y_type_test, axis=1), y_type_pred_labels, target_names=fault_type_classes)
+            size_report = classification_report(np.argmax(y_size_test, axis=1), y_size_pred_labels, target_names=fault_size_classes)
+            
+            # Display the reports
+            st.text("Fault Type Classification Report:\n" + type_report)
+            st.text("Fault Size Classification Report:\n" + size_report)
             
             st.text("Fault Type Classification Report:\n" + type_report)
             st.text("Fault Size Classification Report:\n" + size_report)
