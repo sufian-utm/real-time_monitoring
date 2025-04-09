@@ -153,7 +153,7 @@ if df is not None:
         feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
             "Recursive Feature Elimination (RFE)", "Pearson Correlation",
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
-            "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB"
+            "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB", "Manually Select"
         ])
         num_features = st.sidebar.slider("Number of Features", 5, 25, 10)
         
@@ -209,16 +209,21 @@ if df is not None:
         elif feature_selection_method == "Pearson Correlation":
             # Convert y back to categorical labels if needed
             # if len(np.unique(y_type)) > 2:
-            #    st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
-        
+            #    st.warning("Pearson correlation is best for binary targets. Proceed with caution.")        
             correlations = []
             for i, feature in enumerate(X.columns):
                 corr = np.corrcoef(X_scaled[:, i], y_type)[0, 1]
                 correlations.append(abs(corr))
-
             top_indices = np.argsort(correlations)[::-1][:num_features]
             X_selected = X.iloc[:, top_indices]
             selected_features = X.columns[top_indices].tolist()
+        elif feature_selection_method == "Manually Select":
+            selected_features = st.sidebar.multiselect(
+                "Select Features Manually",
+                options=X.columns.tolist(),
+                default=X.columns[:num_features].tolist()  # Preselect some features
+            )
+            X_selected = X[selected_features]
         
         # Determine selected features if not already assigned
         if 'selected_features' not in locals():
