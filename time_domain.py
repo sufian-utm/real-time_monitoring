@@ -161,7 +161,7 @@ if df is not None:
                 correlations.append(abs(corr))
         
             plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target", num=num_features)
-            top_indices = np.argsort(correlations)[::-1][:]
+            top_indices = np.argsort(correlations)[::-1][:num_features]
             selected_features = X.columns[top_indices]
             st.write(f"Top {num_features} Features by Pearson Correlation:", selected_features)
 
