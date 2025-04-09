@@ -262,7 +262,7 @@ if df is not None:
         feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
             "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
-            "Chi-Square", "ANOVA F-statistic", "Univariate Feature Selection", "Correlation-based Feature Selection"
+            "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB"
         ])
         num_features = st.sidebar.slider("Number of Features", 5, 30, 10)
         
@@ -278,22 +278,18 @@ if df is not None:
             selector = RFE(RandomForestClassifier(), n_features_to_select=num_features).fit(X, y_type)
         elif feature_selection_method == "L1-based (Lasso)":
             lasso = Lasso(alpha=0.01)
-            lasso.fit(X_scaled, y_type)
-            mask = np.abs(lasso.coef_) > 0
-            selector = X_scaled[:, mask]
+            lasso.fit(X_scaled, y)
+            selected_features = X.columns[np.abs(lasso.coef_) > 0]
         elif feature_selection_method == "Mutual Information":
             selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
         elif feature_selection_method == "Chi-Square":
             selector = SelectKBest(score_func=chi2, k=num_features).fit(X, y_type)
         elif feature_selection_method == "ANOVA F-statistic":
             selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
-        elif feature_selection_method == "Univariate Feature Selection":
-            selector = SelectPercentile(f_classif, percentile=num_features).fit(X, y_type)
-        elif feature_selection_method == "Correlation-based Feature Selection":
-            corr_matrix = pd.DataFrame(X).corr()
-            threshold = st.slider("Set Correlation Threshold", 0.0, 1.0, 0.9)
-            selected_features = [column for column in X.columns if corr_matrix[column].abs().max() < threshold]
-            X = X[selected_features]
+        elif feature_selected_method == "K-Nearest Neighbors (KNN)":
+            selector = KNeighborsClassifier(n_neighbors=5).fit(X, y_type)
+        elif feature_selected_method == "GaussianNB":
+            selector = GaussianNB().fit(X, y_type)
 
         X_selected = selector.transform(X)
         selected_features = X.columns[selector.get_support()].tolist()
