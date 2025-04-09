@@ -284,17 +284,16 @@ if df is not None:
             st.text(f"selector: {selector}")
         elif feature_selection_method == "Chi-Square":
             selector = SelectKBest(chi2, k=num_features).fit(X, y_type)
-            st.text(f"selector: {selector}")
         elif feature_selection_method == "ANOVA F-statistic":
             selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
         elif feature_selection_method == "K-Nearest Neighbors (KNN)":
             selector = KNeighborsClassifier(n_neighbors=5).fit(X, y_type)
-            st.text(f"selector: {selector}")
         elif feature_selection_method == "GaussianNB":
             selector = GaussianNB().fit(X, y_type)
-            st.text(f"selector: {selector}")
 
         X_selected = selector.transform(X)
+        st.text(f"X selected: {X_selected}")
+        st.text(f"selector: {selector.get_support()}")
         selected_features = X.columns[selector.get_support()].tolist()
 
         st.subheader(f"Top {num_features} Selected Features - {feature_selection_method}")
