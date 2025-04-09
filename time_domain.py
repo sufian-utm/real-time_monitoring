@@ -156,8 +156,7 @@ if df is not None:
             for i, feature in enumerate(X.columns):
                 corr = np.corrcoef(X_scaled[:, i], y_type)[0, 1]
                 correlations.append(abs(corr))
-        
-            plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target")
+
             top_indices = np.argsort(correlations)[::-1][:num_features]
             X_selected = X.iloc[:, top_indices]
             selected_features = X.columns[top_indices]
