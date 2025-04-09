@@ -98,14 +98,31 @@ def build_model(input_shape, type_output, size_output, model_type):
         x = Conv1D(32, 3, activation='relu')(x)
         x = Bidirectional(GRU(64))(x)
     elif model_type == "CNN+Attention":
-        x = Conv1D
-        
-    model.add(Dense(4, activation='softmax', name="type_output"))  # Fault type output (4 classes)
-    model.add(Dense(5, activation='softmax', name="size_output"))  # Fault size output (5 classes)
-
-    model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
-    return model
+        x = Conv1D()(x)  # Apply custom attention layer
+    else:
+        x = Flatten()(x)
     
+    x = Dense(64, activation='relu')(x)
+    x = Dropout(0.3)(x)
+    
+    # Outputs
+    type_out = Dense(type_output.shape[1], activation='softmax', name='type_output')(x)
+    size_out = Dense(size_output.shape[1], activation='softmax', name='size_output')(x)
+    
+    # Define model
+    model = Model(inputs=inputs, outputs=[type_out, size_out])
+    
+    return compile_model(model, type_output, size_output)
+
+# Compile Model
+def compile_model(model, type_output, size_output):
+    model.compile(
+        optimizer=Adam(),
+        loss={"type_output": "categorical_crossentropy", "size_output": "categorical_crossentropy"},
+        metrics={"type_output": "accuracy", "size_output": "accuracy"}
+    )
+    return model
+
 # Shared Variables and Constants
 
 ml_models = {
