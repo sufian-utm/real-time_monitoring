@@ -167,6 +167,12 @@ if df is not None:
             st.write("Selecting features using Recursive Feature Elimination (RFE)...")
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
             rfe = RFE(rf, n_features_to_select=10)
+            
+            # Plot RFE Ranking
+            ranking = rfe.ranking_
+            ranking_scores = [1 / r if r != 0 else 0 for r in ranking]  # Inverse to show higher is better
+            plot_feature_selection_scores(ranking_scores, X.columns, title="RFE Feature Ranking (Inverse of Rank)")
+            
             X_selected = rfe.fit_transform(X_scaled, y)
             selected_features = X.columns[rfe.support_]
             st.write("Top 10 Selected Features:", selected_features)
@@ -179,6 +185,23 @@ if df is not None:
             selected_features = X.columns[selector.get_support()]
             st.write("Top Features with Variance Threshold:", selected_features)
 
+        # Get variance of each feature
+        variances = selector.variances_
+        feature_names = X.columns
+        
+        # Create a color list for selected vs not selected
+        colors = ['green' if i in selector.get_support(indices=True) else 'red' for i in range(len(feature_names))]
+        
+        # Plot
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.barh(feature_names, variances, color=colors)
+        ax.axvline(threshold, color='blue', linestyle='--', label=f'Threshold = {threshold:.4f}')
+        ax.set_title("Feature Variance (Green = Selected, Red = Dropped)")
+        ax.set_xlabel("Variance")
+        ax.set_ylabel("Feature")
+        ax.legend()
+        st.pyplot(fig)
+        
         # Method 4: Random Forest Feature Importance
         elif selected_method == "Random Forest Feature Importance":
             st.write("Selecting features using Random Forest Feature Importance...")
