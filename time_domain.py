@@ -47,6 +47,19 @@ def load_data():
             st.error("Could not load from URL.")
     return None
 
+def plot_feature_selection_scores(scores, feature_names, title="Feature Selection Scores"):
+    sorted_idx = np.argsort(scores)[::-1]
+    sorted_scores = np.array(scores)[sorted_idx]
+    sorted_features = np.array(feature_names)[sorted_idx]
+
+    plt.figure(figsize=(10, 6))
+    plt.barh(sorted_features[:10][::-1], sorted_scores[:10][::-1], color='skyblue')
+    plt.xlabel("Score")
+    plt.title(title)
+    plt.tight_layout()
+    st.pyplot(plt)
+    plt.close()
+    
 uploaded_file = st.file_uploader("Or upload a local CSV file", type=["csv"])
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
