@@ -309,7 +309,7 @@ if df is not None:
         elif feature_selection_method == "Chi-Square":
             selector = SelectKBest(score_func=chi2, k=num_features).fit(X_all, y_encoded)
         elif feature_selection_method == "ANOVA F-statistic":
-            selector = SelectKBest(f_classif, k=num_features).fit(X_all, y_encoded)
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X_all, y_encoded)
         elif feature_selection_method == "Linear Discriminant Analysis(LDA)":
             selector = SelectFromModel(LinearDiscriminantAnalysis(), max_features=num_features).fit(X_all, y_encoded)
         elif feature_selection_method == "GaussianNB":
