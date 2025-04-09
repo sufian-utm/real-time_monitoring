@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
 from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder, MinMaxScaler
 from sklearn.linear_model import Lasso, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -630,13 +630,8 @@ if df is not None:
             y_size_pred_labels = np.argmax(y_size_pred, axis=1)
 
             # Manually specify the categories
-            fault_type_classes = ["Normal", "B", "IR", "OR"]  # Fault type categories
+            fault_type_classes = ["N ", "B ", "IR", "OR"]  # Fault type categories
             fault_size_classes = ["000", "007", "014", "021", "028"]  # Fault size categories
-
-            st.text(y_type_pred_labels)
-            st.text(fault_type_classes)
-            st.text(y_size_pred_labels)
-            st.text(fault_size_classes)
             
             # Generate classification reports with the correct number of labels
             type_report = classification_report(np.argmax(y_type_test, axis=1), y_type_pred_labels, target_names=fault_type_classes)
@@ -648,6 +643,26 @@ if df is not None:
             
             st.text("Fault Type Classification Report:\n" + type_report)
             st.text("Fault Size Classification Report:\n" + size_report)
+
+            # Generate confusion matrices
+            cm_type = confusion_matrix(np.argmax(y_type_test, axis=1), y_type_pred_labels)
+            cm_size = confusion_matrix(np.argmax(y_size_test, axis=1), y_size_pred_labels)
+            
+            # Create subplots for side-by-side confusion matrices
+            fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+            
+            # Plot confusion matrix for fault type
+            disp_type = ConfusionMatrixDisplay(confusion_matrix=cm_type, display_labels=fault_type_classes)
+            disp_type.plot(ax=axes[0], cmap='Blues', values_format='d')
+            axes[0].set_title("Fault Type Confusion Matrix")
+            
+            # Plot confusion matrix for fault size
+            disp_size = ConfusionMatrixDisplay(confusion_matrix=cm_size, display_labels=fault_size_classes)
+            disp_size.plot(ax=axes[1], cmap='Blues', values_format='d')
+            axes[1].set_title("Fault Size Confusion Matrix")
+            
+            # Display the plots
+            st.pyplot(fig)
             
             st.subheader("📈 Training History")
             fig, ax = plt.subplots(2, 2, figsize=(10, 6))
