@@ -219,7 +219,7 @@ if df is not None:
         target_col_type = "fault_type"
         target_col_size = "fault_size"
         df = df.dropna(subset=[target_col_type, target_col_size])
-        X = df[numeric_cols]
+        X = df[numeric_cols].columns.drop(['Unnamed: 0'], errors='ignore')
         y_type = LabelEncoder().fit_transform(df[target_col_type])
         y_size = LabelEncoder().fit_transform(df[target_col_size])
 
