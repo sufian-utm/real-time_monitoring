@@ -632,6 +632,11 @@ if df is not None:
             # Get the unique classes from the OneHotEncoder
             fault_type_classes = ohe.categories_[0]  # for fault_type
             fault_size_classes = ohe.categories_[0]  # for fault_size
+
+            st.text(y_type_pred_labels)
+            st.text(fault_type_classes)
+            st.text(y_size_pred_labels)
+            st.text(fault_size_classes)
             
             # Generate classification reports with the correct number of labels
             type_report = classification_report(np.argmax(y_type_test, axis=1), y_type_pred_labels, target_names=fault_type_classes)
