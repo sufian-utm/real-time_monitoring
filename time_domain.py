@@ -643,7 +643,7 @@ if df is not None:
             y_size_pred_labels = np.argmax(y_size_pred, axis=1)
 
             # Manually specify the categories
-            fault_type_classes = ["N ", "B ", "IR", "OR"]  # Fault type categories
+            fault_type_classes = ["B ", "IR", "N ", "OR"]  # Fault type categories
             fault_size_classes = ["000", "007", "014", "021", "028"]  # Fault size categories
             
             # Generate classification reports with the correct number of labels
