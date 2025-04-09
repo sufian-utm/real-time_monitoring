@@ -48,7 +48,7 @@ def load_data():
             st.error("Could not load from URL.")
     return None
 
-def plot_feature_selection_scores(scores, feature_names, title="Feature Selection Scores", num=num_features):
+def plot_feature_selection_scores(scores, feature_names, title="Feature Selection Scores", num=10):
     sorted_idx = np.argsort(scores)[::-1]
     sorted_scores = np.array(scores)[sorted_idx]
     sorted_features = np.array(feature_names)[sorted_idx]
