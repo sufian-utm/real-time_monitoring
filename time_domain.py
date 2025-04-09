@@ -152,7 +152,7 @@ if df is not None:
             st.write("Selecting features based on Pearson correlation with the target...")
         
             # Convert y back to categorical labels if needed
-            if len(np.unique(y)) > 2:
+            # if len(np.unique(y)) > 2:
                 # st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
         
             correlations = []
