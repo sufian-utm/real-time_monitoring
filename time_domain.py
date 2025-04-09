@@ -604,12 +604,12 @@ if df is not None:
             # Evaluate the model
             results = model.evaluate(X_test, {"type_output": y_type_test, "size_output": y_size_test}, verbose=0)
             
-            # The results will be in the form: [loss, type_loss, size_loss, type_acc, size_acc]
-            loss = results[0]  # The overall loss
-            type_loss = results[1]
-            size_loss = results[2]
-            type_acc = results[3]
-            size_acc = results[4]
+            # Unpack the results
+            loss = results[0]  # Total loss (combined loss)
+            type_loss = results[1]  # Loss for type_output
+            size_loss = results[2]  # Loss for size_output
+            type_acc = results[3]  # Accuracy for type_output
+            size_acc = results[4]  # Accuracy for size_output
             
             # Display results
             st.write(f"**Overall Loss:** {loss:.4f}")
