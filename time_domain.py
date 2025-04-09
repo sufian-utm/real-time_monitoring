@@ -600,7 +600,21 @@ if df is not None:
             
             st.success("✅ Training complete.")
             st.subheader("📊 Evaluation")
-            loss, type_acc, size_acc = model.evaluate(X_test, {"type_output": y_type_test, "size_output": y_size_test}, verbose=0)
+            
+            # Evaluate the model
+            results = model.evaluate(X_test, {"type_output": y_type_test, "size_output": y_size_test}, verbose=0)
+            
+            # The results will be in the form: [loss, type_loss, size_loss, type_acc, size_acc]
+            loss = results[0]  # The overall loss
+            type_loss = results[1]
+            size_loss = results[2]
+            type_acc = results[3]
+            size_acc = results[4]
+            
+            # Display results
+            st.write(f"**Overall Loss:** {loss:.4f}")
+            st.write(f"**Type Loss:** {type_loss:.4f}")
+            st.write(f"**Size Loss:** {size_loss:.4f}")
             st.write(f"**Fault Type Accuracy:** {type_acc:.2f}")
             st.write(f"**Fault Size Accuracy:** {size_acc:.2f}")
             
