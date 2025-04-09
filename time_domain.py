@@ -517,19 +517,15 @@ if df is not None:
             "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
         ])
     
-        # Compile model with additional metrics
-        def compile_model(model, type_output, size_output):
-            model.compile(
-                optimizer=Adam(),
-                loss={"type_output": "categorical_crossentropy", "size_output": "categorical_crossentropy"},
-                metrics={
-                    "type_output": ["accuracy", "Precision", "Recall", "AUC"],
-                    "size_output": ["accuracy", "Precision", "Recall", "AUC"]
-                }
-            )
-            return model
+        # Custom Attention Layer
+        class Attention1D(tf.keras.layers.Layer):
+            def call(self, inputs):
+                score = tf.keras.layers.Dense(1, activation='tanh')(inputs)
+                weights = tf.nn.softmax(score, axis=1)
+                output = tf.reduce_sum(inputs * weights, axis=1)
+                return output
         
-        # Build model based on selected architecture
+        # Build the Model
         def build_model(input_shape, type_output, size_output, model_type):
             model = Sequential()
             if model_type == "MLP":
@@ -547,27 +543,21 @@ if df is not None:
             elif model_type == "BiLSTM1D":
                 model.add(Bidirectional(LSTM(64), input_shape=input_shape))
             elif model_type == "ResNet1D":
-                input_layer = tf.keras.layers.Input(shape=input_shape)
+                input_layer = Input(shape=input_shape)
                 x = Conv1D(64, 3, activation='relu', padding='same')(input_layer)
                 x = Conv1D(64, 3, activation='relu', padding='same')(x)
                 x = tf.keras.layers.Add()([input_layer, x])
                 x = Flatten()(x)
-                model = tf.keras.Model(inputs=input_layer, outputs=x)
+                model = Model(inputs=input_layer, outputs=x)
                 return compile_model(model, type_output, size_output)
             elif model_type == "CNN+BiGRU":
                 model.add(Conv1D(32, 3, activation='relu', input_shape=input_shape))
                 model.add(Bidirectional(GRU(64)))
             elif model_type == "CNN+Attention":
-                class Attention1D(tf.keras.layers.Layer):
-                    def call(self, inputs):
-                        score = tf.keras.layers.Dense(1, activation='tanh')(inputs)
-                        weights = tf.nn.softmax(score, axis=1)
-                        output = tf.reduce_sum(inputs * weights, axis=1)
-                        return output
-                inputs = tf.keras.Input(shape=input_shape)
+                inputs = Input(shape=input_shape)
                 x = Conv1D(64, 3, activation='relu')(inputs)
-                x = Attention1D()(x)
-                model = tf.keras.Model(inputs=inputs, outputs=x)
+                x = Attention1D()(x)  # Attention applied here
+                model = Model(inputs=inputs, outputs=x)
                 return compile_model(model, type_output, size_output)
             else:
                 model.add(Flatten(input_shape=input_shape))
@@ -576,8 +566,17 @@ if df is not None:
             model.add(Dropout(0.3))
             type_out = Dense(type_output.shape[1], activation='softmax', name='type_output')(model.output)
             size_out = Dense(size_output.shape[1], activation='softmax', name='size_output')(model.output)
-            model = tf.keras.Model(inputs=model.input, outputs=[type_out, size_out])
+            model = Model(inputs=model.input, outputs=[type_out, size_out])
             return compile_model(model, type_output, size_output)
+        
+        # Compile Model
+        def compile_model(model, type_output, size_output):
+            model.compile(
+                optimizer=Adam(),
+                loss={"type_output": "categorical_crossentropy", "size_output": "categorical_crossentropy"},
+                metrics={"type_output": "accuracy", "size_output": "accuracy"}
+            )
+            return model
 
         # Model Selection
         st.header("🧠 Deep Learning Model")
