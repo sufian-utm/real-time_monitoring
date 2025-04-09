@@ -258,9 +258,24 @@ if df is not None:
         # Method 12: GaussianNB
         elif selected_method == "GaussianNB":
             st.write("Selecting features using Gaussian Naive Bayes...")
+
+            # Initialize Gaussian Naive Bayes and fit the model
             gnb = GaussianNB()
             gnb.fit(X_scaled, y)
-            selected_features = X.columns[gnb.get_params()]
+        
+            # Get the coefficients (log probabilities for each class)
+            coefficients = gnb.theta_
+        
+            # Compute the absolute value of the coefficients for each feature
+            importance = np.abs(coefficients).sum(axis=0)
+        
+            # Plot the feature importance scores
+            plot_feature_selection_scores(importance, X.columns, title="GaussianNB Feature Importance Scores")
+        
+            # Get top 10 features based on importance
+            top_features = np.argsort(importance)[::-1][:10]
+            selected_features = X.columns[top_features]
+
             st.write("Top Features by GaussianNB:", selected_features)
             
     elif page == "ML Classification":
