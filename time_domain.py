@@ -589,6 +589,11 @@ if df is not None:
             
             # Train with progress bar
             progress_bar = st.progress(0)  # Streamlit progress bar
+
+            # Callback function to update progress bar
+            def update_progress(epoch, logs):
+                progress = (epoch + 1) / 10  # Assuming you have 10 epochs
+                progress_bar.progress(progress)  # Update progress bar
             
             history = model.fit(
                 X_train, {"type_output": y_type_train, "size_output": y_size_train},
