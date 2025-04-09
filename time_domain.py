@@ -216,15 +216,64 @@ if df is not None:
         st.title("Machine Learning Classification Models")
 
         st.subheader("Data Preparation")
-        target_col = "fault_type"
-        df = df.dropna(subset=[target_col])
+        target_col_type = "fault_type"
+        target_col_size = "fault_size"
+        df = df.dropna(subset=[target_col_type, target_col_size])
         X = df[numeric_cols]
-        y = LabelEncoder().fit_transform(df[target_col])
+        y_type = LabelEncoder().fit_transform(df[target_col_type])
+        y_size = LabelEncoder().fit_transform(df[target_col_size])
 
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
-        X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+        X_train, X_test, y_train_type, y_test_type, y_train_size, y_test_size = train_test_split(
+            X_scaled, y_type, y_size, test_size=0.2, random_state=42
+        )
 
+        # Add the same feature selection dropdown as in the "DL Models" section
+        st.sidebar.header("🔍 Feature Selection")
+        feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
+            "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
+            "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
+            "Chi-Square", "ANOVA F-statistic", "Univariate Feature Selection", "Correlation-based Feature Selection"
+        ])
+        num_features = st.sidebar.slider("Number of Features", 5, 30, 10)
+        
+        # Feature Selection Method
+        if feature_selection_method == "SelectKBest (ANOVA F-statistic)":
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)        
+        elif feature_selection_method == "Recursive Feature Elimination (RFE)":
+            rf = RandomForestClassifier(n_estimators=100, random_state=42)
+            selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)          
+        elif feature_selection_method == "VarianceThreshold":
+            selector = VarianceThreshold(threshold=0.1).fit(X, y_type)
+        elif feature_selection_method == "Random Forest Feature Importance":
+            selector = RFE(RandomForestClassifier(), n_features_to_select=num_features).fit(X, y_type)
+        elif feature_selection_method == "L1-based (Lasso)":
+            lasso = Lasso(alpha=0.01)
+            lasso.fit(X_scaled, y_type)
+            mask = np.abs(lasso.coef_) > 0
+            selector = X_scaled[:, mask]
+        elif feature_selection_method == "Mutual Information":
+            selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
+        elif feature_selection_method == "Chi-Square":
+            selector = SelectKBest(score_func=chi2, k=num_features).fit(X, y_type)
+        elif feature_selection_method == "ANOVA F-statistic":
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
+        elif feature_selection_method == "Univariate Feature Selection":
+            selector = SelectPercentile(f_classif, percentile=num_features).fit(X, y_type)
+        elif feature_selection_method == "Correlation-based Feature Selection":
+            corr_matrix = pd.DataFrame(X).corr()
+            threshold = st.slider("Set Correlation Threshold", 0.0, 1.0, 0.9)
+            selected_features = [column for column in X.columns if corr_matrix[column].abs().max() < threshold]
+            X = X[selected_features]
+
+        X_selected = selector.transform(X)
+        selected_features = X.columns[selector.get_support()].tolist()
+
+        st.subheader(f"Top {num_features} Selected Features")
+        st.write(selected_features)
+        
+        # ML Models
         models = {
             "Logistic Regression": LogisticRegression(max_iter=1000),
             "Random Forest": RandomForestClassifier(),
@@ -242,29 +291,62 @@ if df is not None:
         model = models[selected_model]
 
         if st.button("Train and Evaluate"):
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-            st.text("Classification Report")
-            st.text(classification_report(y_test, y_pred))
+            model.fit(X_train, y_train_type)  # Train on fault type
+            y_pred_type = model.predict(X_test)
+            
+            model.fit(X_train, y_train_size)  # Train on fault size
+            y_pred_size = model.predict(X_test)
 
-            cm = confusion_matrix(y_test, y_pred)
-            st.subheader("Confusion Matrix")
-            fig_cm, ax = plt.subplots()
-            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
-            st.pyplot(fig_cm)
+            st.text("Classification Report for Fault Type")
+            st.text(classification_report(y_test_type, y_pred_type))
+
+            st.text("Classification Report for Fault Size")
+            st.text(classification_report(y_test_size, y_pred_size))
+
+            # Confusion Matrices for Fault Type and Fault Size
+            cm_type = confusion_matrix(y_test_type, y_pred_type)
+            cm_size = confusion_matrix(y_test_size, y_pred_size)
+
+            st.subheader("Confusion Matrices")
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+            sns.heatmap(cm_type, annot=True, fmt="d", cmap="Blues", ax=ax1)
+            ax1.set_title("Fault Type Confusion Matrix")
+            ax1.set_xlabel("Predicted")
+            ax1.set_ylabel("Actual")
+
+            sns.heatmap(cm_size, annot=True, fmt="d", cmap="Blues", ax=ax2)
+            ax2.set_title("Fault Size Confusion Matrix")
+            ax2.set_xlabel("Predicted")
+            ax2.set_ylabel("Actual")
+
+            st.pyplot(fig)
 
             if hasattr(model, "predict_proba"):
-                y_prob = model.predict_proba(X_test)
-                st.subheader("ROC Curve")
-                fig_roc, ax = plt.subplots()
-                for i in range(y_prob.shape[1]):
-                    fpr, tpr, _ = roc_curve(y_test == i, y_prob[:, i])
-                    ax.plot(fpr, tpr, label=f"Class {i} (AUC: {auc(fpr, tpr):.2f})")
-                ax.plot([0, 1], [0, 1], 'k--')
-                ax.set_xlabel("False Positive Rate")
-                ax.set_ylabel("True Positive Rate")
-                ax.legend()
-                st.pyplot(fig_roc)
+                y_prob_type = model.predict_proba(X_test)
+                y_prob_size = model.predict_proba(X_test)
+                
+                st.subheader("ROC Curve for Fault Type")
+                fig_roc_type, ax_roc_type = plt.subplots()
+                for i in range(y_prob_type.shape[1]):
+                    fpr, tpr, _ = roc_curve(y_test_type == i, y_prob_type[:, i])
+                    ax_roc_type.plot(fpr, tpr, label=f"Class {i} (AUC: {auc(fpr, tpr):.2f})")
+                ax_roc_type.plot([0, 1], [0, 1], 'k--')
+                ax_roc_type.set_xlabel("False Positive Rate")
+                ax_roc_type.set_ylabel("True Positive Rate")
+                ax_roc_type.legend()
+                st.pyplot(fig_roc_type)
+
+                st.subheader("ROC Curve for Fault Size")
+                fig_roc_size, ax_roc_size = plt.subplots()
+                for i in range(y_prob_size.shape[1]):
+                    fpr, tpr, _ = roc_curve(y_test_size == i, y_prob_size[:, i])
+                    ax_roc_size.plot(fpr, tpr, label=f"Class {i} (AUC: {auc(fpr, tpr):.2f})")
+                ax_roc_size.plot([0, 1], [0, 1], 'k--')
+                ax_roc_size.set_xlabel("False Positive Rate")
+                ax_roc_size.set_ylabel("True Positive Rate")
+                ax_roc_size.legend()
+                st.pyplot(fig_roc_size)
 
     elif page == "DL Models":
 
