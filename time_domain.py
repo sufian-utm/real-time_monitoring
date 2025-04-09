@@ -124,19 +124,29 @@ if df is not None:
 
         st.subheader("Choose Feature Selection Method")
         selected_method = st.selectbox("Select Feature Selection Method", options=[
-            "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
+            "Recursive Feature Elimination (RFE)", "Pearson Correlation",
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)",
             "Mutual Information", "Chi-Square", "ANOVA F-statistic",  
             "K-Nearest Neighbors (KNN)", "GaussianNB"
         ])
 
         # Method 1: SelectKBest (ANOVA F-statistic)
-        if selected_method == "SelectKBest (ANOVA F-statistic)":
-            st.write("Selecting features using SelectKBest with ANOVA F-statistic...")
-            selector = SelectKBest(f_classif, k=10)
-            X_selected = selector.fit_transform(X_scaled, y)
-            selected_features = X.columns[selector.get_support()]
-            st.write("Top 10 Selected Features:", selected_features)
+        if selected_method == "Pearson Correlation":
+            st.write("Selecting features based on Pearson correlation with the target...")
+        
+            # Convert y back to categorical labels if needed
+            if len(np.unique(y)) > 2:
+                st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
+        
+            correlations = []
+            for i, feature in enumerate(X.columns):
+                corr = np.corrcoef(X_scaled[:, i], y)[0, 1]
+                correlations.append(abs(corr))
+        
+            plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target")
+            top_indices = np.argsort(correlations)[::-1][:10]
+            selected_features = X.columns[top_indices]
+            st.write("Top 10 Features by Pearson Correlation:", selected_features)
 
         # Method 2: Recursive Feature Elimination (RFE)
         elif selected_method == "Recursive Feature Elimination (RFE)":
@@ -196,22 +206,6 @@ if df is not None:
             X_selected = selector.fit_transform(X_scaled, y)
             selected_features = X.columns[selector.get_support()]
             st.write("Top 10 Features by ANOVA F-statistic:", selected_features)
-
-        # Method 9: Univariate Feature Selection
-        elif selected_method == "Univariate Feature Selection":
-            st.write("Selecting features using Univariate Feature Selection...")
-            selector = SelectPercentile(f_classif, percentile=10)
-            X_selected = selector.fit_transform(X_scaled, y)
-            selected_features = X.columns[selector.get_support()]
-            st.write("Top 10 Features by Univariate Feature Selection:", selected_features)
-
-        # Method 10: Correlation-based Feature Selection
-        elif selected_method == "Correlation-based Feature Selection":
-            st.write("Selecting features based on Correlation Threshold...")
-            corr_matrix = pd.DataFrame(X_scaled).corr()
-            threshold = st.slider("Set Correlation Threshold", 0.0, 1.0, 0.9)
-            selected_features = [column for column in X.columns if corr_matrix[column].abs().max() < threshold]
-            st.write(f"Features with correlation below {threshold}:", selected_features)
             
         # Method 11: K-Nearest Neighbors (KNN)
         elif selected_method == "K-Nearest Neighbors (KNN)":
@@ -261,17 +255,14 @@ if df is not None:
         # Add the same feature selection dropdown as in the "DL Models" section
         st.sidebar.header("🔍 Feature Selection")
         feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
-            "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
+            "Recursive Feature Elimination (RFE)",
             "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
             "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB"
         ])
         num_features = st.sidebar.slider("Number of Features", 5, 25, 10)
         
         # Feature Selection Method
-        if feature_selection_method == "SelectKBest (ANOVA F-statistic)":
-            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
-            X_selected = selector.transform(X)            
-        elif feature_selection_method == "Recursive Feature Elimination (RFE)":
+        if feature_selection_method == "Recursive Feature Elimination (RFE)":
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
             selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)
             X_selected = selector.transform(X)
