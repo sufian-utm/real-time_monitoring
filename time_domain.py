@@ -274,7 +274,7 @@ if df is not None:
             selector = SelectKBest(f_classif, k='all')
             selector.fit(X_scaled, y)
             scores = selector.scores_
-            plot_feature_selection_scores(scores, X.columns, title="ANOVA F-statistic Scores")
+            plot_feature_selection_scores(scores, X.columns, title="ANOVA F-statistic Scores", num=num_features)
             top_indices = np.argsort(scores)[::-1][:num_features]
             selected_features = X.columns[top_indices]
             st.write(f"Top {num_features} Features by ANOVA F-statistic:", selected_features)
