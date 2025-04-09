@@ -511,8 +511,8 @@ if df is not None:
         )
     
         # Model Selection
-        st.sidebar.header("🧠 Deep Learning Model")
-        model_type = st.sidebar.selectbox("Select DL Model", [
+        st.header("🧠 Deep Learning Model")
+        model_type = st.selectbox("Select DL Model", [
             "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
             "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
         ])
