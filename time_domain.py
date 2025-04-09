@@ -34,7 +34,7 @@ st.set_page_config(page_title="Feature Explorer", layout="wide")
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Feature Visualizer", "Feature Selection", "ML Classification", "DL Models", "Federated Learning"])
+page = st.sidebar.radio("Go to", ["Feature Visualizer", "Feature Selection", "ML Classification", "DL Models"])
 
 # Function to load data
 def load_data():
@@ -74,6 +74,101 @@ if df is not None:
 
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.drop(['fault_size', 'Unnamed: 0'], errors='ignore')
 
+    if page == "ML Classification" or page == "DL Models":
+        target_col_type = "fault_type"
+        target_col_size = "fault_size"
+
+        df = df.dropna(subset=[target_col_type, target_col_size])
+        X = df[numeric_cols]
+        y_type = LabelEncoder().fit_transform(df[target_col_type])
+        y_size = LabelEncoder().fit_transform(df[target_col_size])
+
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        X_train, X_test, y_train_type, y_test_type, y_train_size, y_test_size = train_test_split(
+            X_scaled, y_type, y_size, test_size=0.2, random_state=42
+        )
+
+        # Add feature selection dropdown
+        st.sidebar.header("🔍 Feature Selection")
+        feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
+            "Recursive Feature Elimination (RFE)", "Pearson Correlation",
+            "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
+            "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB"
+        ])
+        num_features = st.sidebar.slider("Number of Features", 5, 25, 10)
+        
+        # Feature Selection Method
+        if feature_selection_method == "Recursive Feature Elimination (RFE)":
+            rf = RandomForestClassifier(n_estimators=100, random_state=42)
+            selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
+        elif feature_selection_method == "VarianceThreshold":
+            selector = VarianceThreshold(threshold=0.1).fit(X)
+            X_selected = selector.transform(X)
+        elif feature_selection_method == "Random Forest Feature Importance":
+            rf = RandomForestClassifier()
+            rf.fit(X, y_type)
+            importances = rf.feature_importances_
+            top_indices = np.argsort(importances)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices].tolist()
+        elif feature_selection_method == "L1-based (Lasso)":
+            lasso = Lasso(alpha=0.01)
+            lasso.fit(X, y_type)
+            mask = np.abs(lasso.coef_) > 0
+            selected_features = X.columns[mask].tolist()
+            X_selected = X[selected_features]
+        elif feature_selection_method == "Mutual Information":
+            selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
+        elif feature_selection_method == "Chi-Square":
+            scaler = MinMaxScaler()
+            X_scaled = scaler.fit_transform(X)
+            selector = SelectKBest(score_func=chi2, k=num_features)
+            X_selected = selector.fit_transform(X_scaled, y_type)
+        elif feature_selection_method == "ANOVA F-statistic":
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
+            X_selected = selector.transform(X)
+        elif feature_selection_method == "K-Nearest Neighbors (KNN)":
+            knn = KNeighborsClassifier(n_neighbors=5)
+            knn.fit(X, y_type)
+            from sklearn.inspection import permutation_importance
+            result = permutation_importance(knn, X, y_type, n_repeats=10, random_state=42)
+            importances = result.importances_mean
+            top_indices = np.argsort(importances)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices].tolist()
+        elif feature_selection_method == "GaussianNB":
+            gnb = GaussianNB()
+            gnb.fit(X, y_type)
+            # No built-in feature ranking; use variance as a proxy
+            variances = X.var()
+            top_indices = np.argsort(variances)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices].tolist()
+        elif feature_selection_method == "Pearson Correlation":
+            # Convert y back to categorical labels if needed
+            if len(np.unique(y_type)) > 2:
+                st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
+        
+            correlations = []
+            for i, feature in enumerate(X.columns):
+                corr = np.corrcoef(X_scaled[:, i], y_type)[0, 1]
+                correlations.append(abs(corr))
+        
+            plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target")
+            top_indices = np.argsort(correlations)[::-1][:num_features]
+            X_selected = X.iloc[:, top_indices]
+            selected_features = X.columns[top_indices]
+        
+        # Determine selected features if not already assigned
+        if 'selected_features' not in locals():
+            if isinstance(selector, TransformerMixin) and hasattr(selector, 'get_support'):
+                selected_features = X.columns[selector.get_support()].tolist()
+            else:
+                selected_features = X.columns[:X_selected.shape[1]].tolist()
+    
     if page == "Feature Visualizer":
         st.title("Feature Visualization")
         st.subheader("Preview of Dataset")
@@ -316,101 +411,7 @@ if df is not None:
             
     elif page == "ML Classification":
         st.title("Machine Learning Classification Models")
-
         st.subheader("Data Preparation")
-        target_col_type = "fault_type"
-        target_col_size = "fault_size"
-        df = df.dropna(subset=[target_col_type, target_col_size])
-        X = df[numeric_cols]
-        y_type = LabelEncoder().fit_transform(df[target_col_type])
-        y_size = LabelEncoder().fit_transform(df[target_col_size])
-
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
-        X_train, X_test, y_train_type, y_test_type, y_train_size, y_test_size = train_test_split(
-            X_scaled, y_type, y_size, test_size=0.2, random_state=42
-        )
-
-        # Add the same feature selection dropdown as in the "DL Models" section
-        st.sidebar.header("🔍 Feature Selection")
-        feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
-            "Recursive Feature Elimination (RFE)", "Pearson Correlation",
-            "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)","Mutual Information", 
-            "Chi-Square", "ANOVA F-statistic",  "K-Nearest Neighbors (KNN)", "GaussianNB"
-        ])
-        num_features = st.sidebar.slider("Number of Features", 5, 25, 10)
-        
-        # Feature Selection Method
-        if feature_selection_method == "Recursive Feature Elimination (RFE)":
-            rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            selector = RFE(rf, n_features_to_select=num_features).fit(X, y_type)
-            X_selected = selector.transform(X)
-        elif feature_selection_method == "VarianceThreshold":
-            selector = VarianceThreshold(threshold=0.1).fit(X)
-            X_selected = selector.transform(X)
-        elif feature_selection_method == "Random Forest Feature Importance":
-            rf = RandomForestClassifier()
-            rf.fit(X, y_type)
-            importances = rf.feature_importances_
-            top_indices = np.argsort(importances)[::-1][:num_features]
-            X_selected = X.iloc[:, top_indices]
-            selected_features = X.columns[top_indices].tolist()
-        elif feature_selection_method == "L1-based (Lasso)":
-            lasso = Lasso(alpha=0.01)
-            lasso.fit(X, y_type)
-            mask = np.abs(lasso.coef_) > 0
-            selected_features = X.columns[mask].tolist()
-            X_selected = X[selected_features]
-        elif feature_selection_method == "Mutual Information":
-            selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X, y_type)
-            X_selected = selector.transform(X)
-        elif feature_selection_method == "Chi-Square":
-            scaler = MinMaxScaler()
-            X_scaled = scaler.fit_transform(X)
-            selector = SelectKBest(score_func=chi2, k=num_features)
-            X_selected = selector.fit_transform(X_scaled, y_type)
-        elif feature_selection_method == "ANOVA F-statistic":
-            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X, y_type)
-            X_selected = selector.transform(X)
-        elif feature_selection_method == "K-Nearest Neighbors (KNN)":
-            knn = KNeighborsClassifier(n_neighbors=5)
-            knn.fit(X, y_type)
-            from sklearn.inspection import permutation_importance
-            result = permutation_importance(knn, X, y_type, n_repeats=10, random_state=42)
-            importances = result.importances_mean
-            top_indices = np.argsort(importances)[::-1][:num_features]
-            X_selected = X.iloc[:, top_indices]
-            selected_features = X.columns[top_indices].tolist()
-        elif feature_selection_method == "GaussianNB":
-            gnb = GaussianNB()
-            gnb.fit(X, y_type)
-            # No built-in feature ranking; use variance as a proxy
-            variances = X.var()
-            top_indices = np.argsort(variances)[::-1][:num_features]
-            X_selected = X.iloc[:, top_indices]
-            selected_features = X.columns[top_indices].tolist()
-        elif feature_selection_method == "Pearson Correlation":
-            # Convert y back to categorical labels if needed
-            if len(np.unique(y_type)) > 2:
-                st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
-        
-            correlations = []
-            for i, feature in enumerate(X.columns):
-                corr = np.corrcoef(X_scaled[:, i], y_type)[0, 1]
-                correlations.append(abs(corr))
-        
-            plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target")
-            top_indices = np.argsort(correlations)[::-1][:num_features]
-            X_selected = X.iloc[:, top_indices]
-            selected_features = X.columns[top_indices]
-        
-        # Determine selected features if not already assigned
-        if 'selected_features' not in locals():
-            if isinstance(selector, TransformerMixin) and hasattr(selector, 'get_support'):
-                selected_features = X.columns[selector.get_support()].tolist()
-            else:
-                selected_features = X.columns[:X_selected.shape[1]].tolist()
-
         st.subheader(f"Top {num_features} Selected Features - {feature_selection_method}")
         st.write(selected_features)
         
@@ -490,58 +491,8 @@ if df is not None:
                 st.pyplot(fig_roc_size)
 
     elif page == "DL Models":
-
-        # Sidebar - Feature Selection
-        st.sidebar.header("🔍 Feature Selection")
-        feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
-            "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
-            "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)",
-            "Mutual Information", "Chi-Square", "ANOVA F-statistic", "Linear Discriminant Analysis(LDA)",
-            "GaussianNB", "KNN"
-        ])
-        num_features = st.sidebar.slider("Number of Features", 5, 30, 10)
-        
-        # Prepare Data
-        X = df[numeric_cols]
-
-        # Feature Scaling
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
-        
-        X_all = df.select_dtypes(include=['float64', 'int64'])
-        y_all = df['fault_type']
-        y_encoded = LabelEncoder().fit_transform(y_all)
-    
-        # Feature Selection Method
-        if feature_selection_method == "SelectKBest (ANOVA F-statistic)":
-            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X_all, y_encoded)        
-        elif feature_selection_method == "Recursive Feature Elimination (RFE)":
-            rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            selector = RFE(rf, n_features_to_select=num_features).fit(X_all, y_encoded)          
-        elif feature_selection_method == "VarianceThreshold":
-            selector = VarianceThreshold(threshold=0.1).fit(X_all, y_encoded)
-        elif feature_selection_method == "Random Forest Feature Importance":
-            selector = RFE(RandomForestClassifier(), n_features_to_select=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "L1-based (Lasso)":
-            lasso = Lasso(alpha=0.01)
-            lasso.fit(X_scaled, y)
-            mask = np.abs(lasso.coef_) > 0
-            selector = X_scaled[:, mask]
-        elif feature_selection_method == "Mutual Information":
-            selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "Chi-Square":
-            selector = SelectKBest(score_func=chi2, k=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "ANOVA F-statistic":
-            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "Linear Discriminant Analysis(LDA)":
-            selector = SelectFromModel(LinearDiscriminantAnalysis(), max_features=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "GaussianNB":
-            selector = SelectFromModel(GaussianNB(), max_features=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "KNN":
-            selector = SelectFromModel(KNeighborsClassifier(), max_features=num_features).fit(X_all, y_encoded)
-        
-        X_selected = selector.transform(X_all)
-        selected_features = X_all.columns[selector.get_support()].tolist()
+        st.subheader(f"Top {num_features} Selected Features - {feature_selection_method}")
+        st.write(selected_features)
     
         # Preprocessing
         scaler = StandardScaler()
