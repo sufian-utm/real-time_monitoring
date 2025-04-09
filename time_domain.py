@@ -215,7 +215,7 @@ if df is not None:
         # Method 11: Linear Discriminant Analysis(LDA)
         elif selected_method == "Linear Discriminant Analysis(LDA)":
             st.write("Selecting features using Linear Discriminant Analysis...")
-            lda = LinearDiscriminantAnalysis(n_components=10)
+            lda = LinearDiscriminantAnalysis()
             X_selected = lda.fit_transform(X_scaled, y)
             selected_features = X.columns[lda.components_]
             st.write("Top 10 Features by LDA:", selected_features)
