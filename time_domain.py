@@ -54,7 +54,7 @@ def plot_feature_selection_scores(scores, feature_names, title="Feature Selectio
     sorted_features = np.array(feature_names)[sorted_idx]
 
     plt.figure(figsize=(10, 6))
-    plt.barh(sorted_features[:10][::-1], sorted_scores[:10][::-1], color='skyblue')
+    plt.barh(sorted_features[:][::-1], sorted_scores[:][::-1], color='skyblue')
     plt.xlabel("Score")
     plt.title(title)
     plt.tight_layout()
@@ -158,7 +158,7 @@ if df is not None:
                 correlations.append(abs(corr))
         
             plot_feature_selection_scores(correlations, X.columns, title="Pearson Correlation with Target")
-            top_indices = np.argsort(correlations)[::-1][:10]
+            top_indices = np.argsort(correlations)[::-1][:]
             selected_features = X.columns[top_indices]
             st.write("Top 10 Features by Pearson Correlation:", selected_features)
 
