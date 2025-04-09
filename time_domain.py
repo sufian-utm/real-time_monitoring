@@ -185,22 +185,22 @@ if df is not None:
             selected_features = X.columns[selector.get_support()]
             st.write("Top Features with Variance Threshold:", selected_features)
 
-        # Get variance of each feature
-        variances = selector.variances_
-        feature_names = X.columns
-        
-        # Create a color list for selected vs not selected
-        colors = ['green' if i in selector.get_support(indices=True) else 'red' for i in range(len(feature_names))]
-        
-        # Plot
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.barh(feature_names, variances, color=colors)
-        ax.axvline(threshold, color='blue', linestyle='--', label=f'Threshold = {threshold:.4f}')
-        ax.set_title("Feature Variance (Green = Selected, Red = Dropped)")
-        ax.set_xlabel("Variance")
-        ax.set_ylabel("Feature")
-        ax.legend()
-        st.pyplot(fig)
+            # Get variance of each feature
+            variances = selector.variances_
+            feature_names = X.columns
+            
+            # Create a color list for selected vs not selected
+            colors = ['green' if i in selector.get_support(indices=True) else 'red' for i in range(len(feature_names))]
+            
+            # Plot
+            fig, ax = plt.subplots(figsize=(10, 5))
+            ax.barh(feature_names, variances, color=colors)
+            ax.axvline(threshold, color='blue', linestyle='--', label=f'Threshold = {threshold:.4f}')
+            ax.set_title("Feature Variance (Green = Selected, Red = Dropped)")
+            ax.set_xlabel("Variance")
+            ax.set_ylabel("Feature")
+            ax.legend()
+            st.pyplot(fig)
         
         # Method 4: Random Forest Feature Importance
         elif selected_method == "Random Forest Feature Importance":
