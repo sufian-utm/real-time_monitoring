@@ -99,7 +99,13 @@ def build_model(input_shape, type_output, size_output, model_type):
         x = Bidirectional(GRU(64))(x)
     elif model_type == "CNN+Attention":
         x = Conv1D
+        
+    model.add(Dense(4, activation='softmax', name="type_output"))  # Fault type output (4 classes)
+    model.add(Dense(5, activation='softmax', name="size_output"))  # Fault size output (5 classes)
 
+    model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+    
 # Shared Variables and Constants
 
 ml_models = {
