@@ -57,7 +57,7 @@ if df is not None:
     df['fault_size'] = df['fault'].astype(str).str.extract(r'(\d{3})')
     df['fault_size'] = df['fault_size'].fillna('000')
 
-    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.drop(['fault_size'], errors='ignore')
+    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.drop(['fault_size', 'Unnamed: 0'], errors='ignore')
 
     if page == "Feature Visualizer":
         st.title("Feature Visualization")
