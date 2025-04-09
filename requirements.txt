@@ -5,3 +5,6 @@ seaborn
 plotly
 scikit-learn
 tensorflow
+torch
+torchvision
+skorch
