@@ -703,10 +703,26 @@ if df is not None:
         st.subheader("Selected Features")
         st.write(f"Top {num_features} features selected by: **{feature_selection_method}**")
         st.write(selected_features)
+
+        # Preprocessing
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X_selected)
+        X = X_scaled.reshape(X_scaled.shape[0], X_scaled.shape[1], 1)
+    
+        fault_type_encoded = LabelEncoder().fit_transform(df['fault_type'])
+        fault_size_encoded = LabelEncoder().fit_transform(df['fault_size'])
+    
+        ohe = OneHotEncoder(sparse_output=False)
+        y_type = ohe.fit_transform(fault_type_encoded.reshape(-1, 1))
+        y_size = ohe.fit_transform(fault_size_encoded.reshape(-1, 1))
+    
+        X_train, X_test, y_type_train, y_type_test, y_size_train, y_size_test = train_test_split(
+            X, y_type, y_size, test_size=0.2, random_state=42
+        )
     
         selected_ml_models = st.multiselect("Choose ML Models to Compare", list(ml_models.keys()), default=["Random Forest", "SVM"])
         selected_dl_models = st.multiselect("Choose DL Models to Compare", dl_models, default=["CNN1D", "LSTM1D"])
-    
+
         comparison_data = []
     
         # --- Compare ML Models ---
