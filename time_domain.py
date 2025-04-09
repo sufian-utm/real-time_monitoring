@@ -184,22 +184,26 @@ if df is not None:
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
             rf.fit(X_scaled, y)
             importance = rf.feature_importances_
+            plot_feature_selection_scores(importance, X.columns, title="Random Forest Feature Importance")
             indices = np.argsort(importance)[::-1]
             selected_features = X.columns[indices][:10]
             st.write("Top 10 Important Features:", selected_features)
-
+            
         # Method 5: L1-based (Lasso) Regularization
         elif selected_method == "L1-based (Lasso)":
             st.write("Selecting features using Lasso (L1-based Regularization)...")
             lasso = Lasso(alpha=0.01)
             lasso.fit(X_scaled, y)
-            selected_features = X.columns[np.abs(lasso.coef_) > 0]
+            coef = np.abs(lasso.coef_)
+            plot_feature_selection_scores(coef, X.columns, title="Lasso Feature Coefficients")
+            selected_features = X.columns[coef > 0]
             st.write("Top Selected Features with Lasso Regularization:", selected_features)
 
         # Method 6: Mutual Information
         elif selected_method == "Mutual Information":
             st.write("Selecting features using Mutual Information...")
             mutual_info = mutual_info_classif(X_scaled, y)
+            plot_feature_selection_scores(mutual_info, X.columns, title="Mutual Information Scores")
             indices = np.argsort(mutual_info)[::-1]
             selected_features = X.columns[indices][:10]
             st.write("Top 10 Features by Mutual Information:", selected_features)
@@ -207,37 +211,35 @@ if df is not None:
         # Method 7: Chi-Square
         elif selected_method == "Chi-Square":
             st.write("Selecting features using Chi-Square test...")
-            chi2_selector = SelectKBest(chi2, k=10)
-            X_selected = chi2_selector.fit_transform(X_scaled, y)
-            selected_features = X.columns[chi2_selector.get_support()]
+            X_chi2 = np.maximum(X_scaled, 0)  # Chi2 requires non-negative features
+            selector = SelectKBest(chi2, k='all')
+            selector.fit(X_chi2, y)
+            scores = selector.scores_
+            plot_feature_selection_scores(scores, X.columns, title="Chi-Square Scores")
+            top_indices = np.argsort(scores)[::-1][:10]
             st.write("Top 10 Selected Features by Chi-Square:", selected_features)
 
         # Method 8: ANOVA F-statistic
         elif selected_method == "ANOVA F-statistic":
             st.write("Selecting features using ANOVA F-statistic...")
-            selector = SelectKBest(f_classif, k=10)
-            X_selected = selector.fit_transform(X_scaled, y)
-            selected_features = X.columns[selector.get_support()]
+            selector = SelectKBest(f_classif, k='all')
+            selector.fit(X_scaled, y)
+            scores = selector.scores_
+            plot_feature_selection_scores(scores, X.columns, title="ANOVA F-statistic Scores")
+            top_indices = np.argsort(scores)[::-1][:10]
+            selected_features = X.columns[top_indices]
             st.write("Top 10 Features by ANOVA F-statistic:", selected_features)
             
         # Method 11: K-Nearest Neighbors (KNN)
         elif selected_method == "K-Nearest Neighbors (KNN)":
             st.write("Selecting features using K-Nearest Neighbors (KNN)...")
-            
-            # Initialize KNN and fit the model
-            knn = KNeighborsClassifier(n_neighbors=5)  # Adjust n_neighbors as necessary
+            knn = KNeighborsClassifier(n_neighbors=5)
             knn.fit(X_scaled, y)
-            
-            # Use Permutation Importance to rank features
-            from sklearn.inspection import permutation_importance
-            
             result = permutation_importance(knn, X_scaled, y, n_repeats=10, random_state=42)
             importances = result.importances_mean
-            
-            # Get top 10 features based on importance
+            plot_feature_selection_scores(importances, X.columns, title="Permutation Importance (KNN)")
             top_features = np.argsort(importances)[::-1][:10]
             selected_features = X.columns[top_features]
-            
             st.write("Top 10 Features based on KNN:", selected_features)
     
         # Method 12: GaussianNB
