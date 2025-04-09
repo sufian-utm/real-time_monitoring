@@ -147,13 +147,13 @@ if df is not None:
         # Add numbr of features selection bar
         num_features = st.sidebar.slider("Number of Features", 5, 25, 10)
         
-        # Method 1: SelectKBest (ANOVA F-statistic)
+        # Method 1: Pearson Correlation
         if selected_method == "Pearson Correlation":
             st.write("Selecting features based on Pearson correlation with the target...")
         
             # Convert y back to categorical labels if needed
             if len(np.unique(y)) > 2:
-                st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
+                # st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
         
             correlations = []
             for i, feature in enumerate(X.columns):
