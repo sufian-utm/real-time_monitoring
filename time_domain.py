@@ -514,26 +514,31 @@ if df is not None:
             st.pyplot(fig)
 
             if hasattr(model, "predict_proba"):
+                model.fit(X_train, y_train_type)
                 y_prob_type = model.predict_proba(X_test)
+            
+                model.fit(X_train, y_train_size)
                 y_prob_size = model.predict_proba(X_test)
-                
+            
                 st.subheader("ROC Curve for Fault Type")
                 fig_roc_type, ax_roc_type = plt.subplots()
-                for i in range(y_prob_type.shape[1]):
+                for i in range(4):  # Fault type has 4 classes
                     fpr, tpr, _ = roc_curve(y_test_type == i, y_prob_type[:, i])
                     ax_roc_type.plot(fpr, tpr, label=f"Class {i} (AUC: {auc(fpr, tpr):.2f})")
                 ax_roc_type.plot([0, 1], [0, 1], 'k--')
+                ax_roc_type.set_title("ROC Curve - Fault Type")
                 ax_roc_type.set_xlabel("False Positive Rate")
                 ax_roc_type.set_ylabel("True Positive Rate")
                 ax_roc_type.legend()
                 st.pyplot(fig_roc_type)
-
+            
                 st.subheader("ROC Curve for Fault Size")
                 fig_roc_size, ax_roc_size = plt.subplots()
-                for i in range(y_prob_size.shape[1]):
+                for i in range(5):  # Fault size has 5 classes
                     fpr, tpr, _ = roc_curve(y_test_size == i, y_prob_size[:, i])
                     ax_roc_size.plot(fpr, tpr, label=f"Class {i} (AUC: {auc(fpr, tpr):.2f})")
                 ax_roc_size.plot([0, 1], [0, 1], 'k--')
+                ax_roc_size.set_title("ROC Curve - Fault Size")
                 ax_roc_size.set_xlabel("False Positive Rate")
                 ax_roc_size.set_ylabel("True Positive Rate")
                 ax_roc_size.legend()
