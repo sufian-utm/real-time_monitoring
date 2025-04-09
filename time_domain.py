@@ -24,6 +24,11 @@ from sklearn.naive_bayes import GaussianNB, MultinomialNB, BernoulliNB
 from sklearn.neighbors import KNeighborsClassifier, NearestCentroid
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, LSTM, GRU, Bidirectional, Dropout, Input
+from tensorflow.keras.optimizers import Adam
+from sklearn.preprocessing import OneHotEncoder
 
 # Set Streamlit page config
 st.set_page_config(page_title="Feature Explorer", layout="wide")
@@ -265,8 +270,158 @@ if df is not None:
                 st.pyplot(fig_roc)
 
     elif page == "DL Models":
-        st.title("Deep Learning Models")
-        st.write("Coming soon: 20 Deep Learning models with training visualization")
+
+        # Sidebar - Feature Selection
+        st.sidebar.header("🔍 Feature Selection")
+        feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
+            "f_classif", "mutual_info_classif", "chi2", "RFE (LogisticRegression)", "RFE (LinearSVC)",
+            "RFE (RandomForest)", "Tree-Based", "LDA", "GaussianNB", "KNN"
+        ])
+        num_features = st.sidebar.slider("Number of Features", 5, 30, 10)
+    
+        X_all = df.select_dtypes(include=['float64', 'int64'])
+        y_all = df['fault_type']
+        y_encoded = LabelEncoder().fit_transform(y_all)
+    
+        # Feature Selection Method
+        if feature_selection_method == "f_classif":
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "mutual_info_classif":
+            selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "chi2":
+            selector = SelectKBest(score_func=chi2, k=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "RFE (LogisticRegression)":
+            selector = RFE(LogisticRegression(), n_features_to_select=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "RFE (LinearSVC)":
+            selector = RFE(LinearSVC(), n_features_to_select=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "RFE (RandomForest)":
+            selector = RFE(RandomForestClassifier(), n_features_to_select=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "Tree-Based":
+            selector = SelectFromModel(RandomForestClassifier(), max_features=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "LDA":
+            selector = SelectFromModel(LinearDiscriminantAnalysis(), max_features=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "GaussianNB":
+            selector = SelectFromModel(GaussianNB(), max_features=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "KNN":
+            selector = SelectFromModel(KNeighborsClassifier(), max_features=num_features).fit(X_all, y_encoded)
+    
+        X_selected = selector.transform(X_all)
+        selected_features = X_all.columns[selector.get_support()].tolist()
+    
+        # Preprocessing
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X_selected)
+        X = X_scaled.reshape(X_scaled.shape[0], X_scaled.shape[1], 1)
+    
+        fault_type_encoded = LabelEncoder().fit_transform(df['fault_type'])
+        fault_size_encoded = LabelEncoder().fit_transform(df['fault_size'])
+    
+        ohe = OneHotEncoder(sparse=False)
+        y_type = ohe.fit_transform(fault_type_encoded.reshape(-1, 1))
+        y_size = ohe.fit_transform(fault_size_encoded.reshape(-1, 1))
+    
+        X_train, X_test, y_type_train, y_type_test, y_size_train, y_size_test = train_test_split(
+            X, y_type, y_size, test_size=0.2, random_state=42
+        )
+    
+        # Model Selection
+        st.sidebar.header("🧠 Deep Learning Model")
+        model_type = st.sidebar.selectbox("Select DL Model", [
+            "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
+            "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
+        ])
+    
+        def build_model(input_shape, type_output, size_output):
+            model = Sequential()
+            if model_type == "MLP":
+                model.add(Input(shape=input_shape))
+                model.add(Flatten())
+                model.add(Dense(128, activation='relu'))
+            elif model_type == "CNN1D":
+                model.add(Conv1D(64, 3, activation='relu', input_shape=input_shape))
+                model.add(MaxPooling1D())
+                model.add(Flatten())
+            elif model_type == "LSTM1D":
+                model.add(LSTM(64, input_shape=input_shape))
+            elif model_type == "GRU1D":
+                model.add(GRU(64, input_shape=input_shape))
+            elif model_type == "BiLSTM1D":
+                model.add(Bidirectional(LSTM(64), input_shape=input_shape))
+            elif model_type == "ResNet1D":
+                input_layer = tf.keras.layers.Input(shape=input_shape)
+                x = Conv1D(64, 3, activation='relu', padding='same')(input_layer)
+                x = Conv1D(64, 3, activation='relu', padding='same')(x)
+                x = tf.keras.layers.Add()([input_layer, x])
+                x = Flatten()(x)
+                model = tf.keras.Model(inputs=input_layer, outputs=x)
+                return compile_model(model, type_output, size_output)
+            elif model_type == "CNN+BiGRU":
+                model.add(Conv1D(32, 3, activation='relu', input_shape=input_shape))
+                model.add(Bidirectional(GRU(64)))
+            elif model_type == "CNN+Attention":
+                class Attention1D(tf.keras.layers.Layer):
+                    def call(self, inputs):
+                        score = tf.keras.layers.Dense(1, activation='tanh')(inputs)
+                        weights = tf.nn.softmax(score, axis=1)
+                        output = tf.reduce_sum(inputs * weights, axis=1)
+                        return output
+                inputs = tf.keras.Input(shape=input_shape)
+                x = Conv1D(64, 3, activation='relu')(inputs)
+                x = Attention1D()(x)
+                model = tf.keras.Model(inputs=inputs, outputs=x)
+                return compile_model(model, type_output, size_output)
+            else:
+                model.add(Flatten(input_shape=input_shape))
+    
+            model.add(Dense(64, activation='relu'))
+            model.add(Dropout(0.3))
+            type_out = Dense(type_output.shape[1], activation='softmax', name='type_output')(model.output)
+            size_out = Dense(size_output.shape[1], activation='softmax', name='size_output')(model.output)
+            model = tf.keras.Model(inputs=model.input, outputs=[type_out, size_out])
+            return compile_model(model, type_output, size_output)
+    
+        def compile_model(model, type_output, size_output):
+            model.compile(
+                optimizer=Adam(),
+                loss={"type_output": "categorical_crossentropy", "size_output": "categorical_crossentropy"},
+                metrics={"type_output": "accuracy", "size_output": "accuracy"}
+            )
+            return model
+    
+        # Training Button
+        if st.button("🚀 Train Model"):
+            model = build_model(X_train.shape[1:], y_type_train, y_size_train)
+            history = model.fit(
+                X_train, {"type_output": y_type_train, "size_output": y_size_train},
+                validation_data=(X_test, {"type_output": y_type_test, "size_output": y_size_test}),
+                epochs=10, batch_size=32, verbose=1
+            )
+    
+            st.success("✅ Training complete.")
+            st.subheader("📊 Evaluation")
+            loss, type_acc, size_acc = model.evaluate(X_test, {"type_output": y_type_test, "size_output": y_size_test}, verbose=0)
+            st.write(f"**Fault Type Accuracy:** {type_acc:.2f}")
+            st.write(f"**Fault Size Accuracy:** {size_acc:.2f}")
+    
+            st.subheader("📈 Training History")
+            fig, ax = plt.subplots(2, 2, figsize=(10, 6))
+            ax[0, 0].plot(history.history['type_output_accuracy'], label='Train')
+            ax[0, 0].plot(history.history['val_type_output_accuracy'], label='Val')
+            ax[0, 0].legend(); ax[0, 0].set_title("Type Accuracy")
+    
+            ax[0, 1].plot(history.history['size_output_accuracy'], label='Train')
+            ax[0, 1].plot(history.history['val_size_output_accuracy'], label='Val')
+            ax[0, 1].legend(); ax[0, 1].set_title("Size Accuracy")
+    
+            ax[1, 0].plot(history.history['type_output_loss'], label='Train')
+            ax[1, 0].plot(history.history['val_type_output_loss'], label='Val')
+            ax[1, 0].legend(); ax[1, 0].set_title("Type Loss")
+    
+            ax[1, 1].plot(history.history['size_output_loss'], label='Train')
+            ax[1, 1].plot(history.history['val_size_output_loss'], label='Val')
+            ax[1, 1].legend(); ax[1, 1].set_title("Size Loss")
+    
+            st.pyplot(fig)
 
     elif page == "Federated Learning":
         st.title("Federated Learning Setup")
