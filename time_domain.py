@@ -633,9 +633,9 @@ if df is not None:
             fault_type_classes = ["Normal", "B", "IR", "OR"]  # Fault type categories
             fault_size_classes = ["000", "007", "014", "021", "028"]  # Fault size categories
 
-            st.text(display(y_type_pred_labels))
+            st.text(y_type_pred_labels)
             st.text(fault_type_classes)
-            st.text(display(y_size_pred_labels))
+            st.text(y_size_pred_labels)
             st.text(fault_size_classes)
             
             # Generate classification reports with the correct number of labels
