@@ -732,10 +732,10 @@ if df is not None:
             duration = time.time() - start
             comparison_data.append({
                 "Model": model_name,
-                "Type Accuracy": type_acc,
-                "Size Accuracy": size_acc,
-                "Type Precision": type_prec,
-                "Size Precision": size_prec,
+                "Type Acc.": type_acc,
+                "Size Acc.": size_acc,
+                "Type Prec.": type_prec,
+                "Size Prec.": size_prec,
                 "Type Recall": type_recall,
                 "Size Recall": size_recall,
                 "Type F1": type_f1,
@@ -773,11 +773,35 @@ if df is not None:
             )
             duration = time.time() - start
             eval_results = dl_model.evaluate(X_test, {"type_output": y_type_test, "size_output": y_size_test}, verbose=0)
+        
+            # Predictions for DL model
+            y_type_pred = dl_model.predict(X_test)[0]
+            y_size_pred = dl_model.predict(X_test)[1]
+    
+            # Get the predicted labels
+            y_type_pred_labels = np.argmax(y_type_pred, axis=1)
+            y_size_pred_labels = np.argmax(y_size_pred, axis=1)
+    
+            # Compute precision, recall, and F1 score for DL models
+            type_prec = precision_score(np.argmax(y_type_test, axis=1), y_type_pred_labels, average='macro')
+            size_prec = precision_score(np.argmax(y_size_test, axis=1), y_size_pred_labels, average='macro')
+    
+            type_recall = recall_score(np.argmax(y_type_test, axis=1), y_type_pred_labels, average='macro')
+            size_recall = recall_score(np.argmax(y_size_test, axis=1), y_size_pred_labels, average='macro')
+    
+            type_f1 = f1_score(np.argmax(y_type_test, axis=1), y_type_pred_labels, average='macro')
+            size_f1 = f1_score(np.argmax(y_size_test, axis=1), y_size_pred_labels, average='macro')
     
             comparison_data.append({
                 "Model": model_name,
                 "Type Accuracy": eval_results[3],
                 "Size Accuracy": eval_results[4],
+                "Type Prec.": type_prec,
+                "Size Prec.": size_prec,
+                "Type Recall": type_recall,
+                "Size Recall": size_recall,
+                "Type F1": type_f1,
+                "Size F1": size_f1,
                 "Train Time (s)": round(duration, 2),
                 "Model Type": "DL"
             })
@@ -799,7 +823,6 @@ if df is not None:
         results_df.plot.bar(x="Model", y="Train Time (s)", ax=ax, color='orange')
         ax.set_ylabel("Time (s)")
         st.pyplot(fig)
-
 
 else:
     st.info("Please enter a valid GitHub URL or upload a file to begin.")
