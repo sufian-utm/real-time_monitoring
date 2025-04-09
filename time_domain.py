@@ -149,8 +149,8 @@ if df is not None:
             selected_features = X.columns[top_indices].tolist()
         elif feature_selection_method == "Pearson Correlation":
             # Convert y back to categorical labels if needed
-            if len(np.unique(y_type)) > 2:
-                st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
+            # if len(np.unique(y_type)) > 2:
+            #    st.warning("Pearson correlation is best for binary targets. Proceed with caution.")
         
             correlations = []
             for i, feature in enumerate(X.columns):
