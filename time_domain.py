@@ -271,37 +271,52 @@ if df is not None:
         # Sidebar - Feature Selection
         st.sidebar.header("🔍 Feature Selection")
         feature_selection_method = st.sidebar.selectbox("Select Feature Selection Method", [
-            "f_classif", "mutual_info_classif", "chi2", "RFE (LogisticRegression)", "RFE (LinearSVC)",
-            "RFE (RandomForest)", "Tree-Based", "LDA", "GaussianNB", "KNN"
+            "SelectKBest (ANOVA F-statistic)", "Recursive Feature Elimination (RFE)",
+            "VarianceThreshold", "Random Forest Feature Importance", "L1-based (Lasso)",
+            "Mutual Information", "Chi-Square", "ANOVA F-statistic", "Linear Discriminant Analysis(LDA)",
+            "GaussianNB", "KNN"
         ])
         num_features = st.sidebar.slider("Number of Features", 5, 30, 10)
-    
+        
+        # Prepare Data
+        X = df[numeric_cols]
+
+        # Feature Scaling
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        
         X_all = df.select_dtypes(include=['float64', 'int64'])
         y_all = df['fault_type']
         y_encoded = LabelEncoder().fit_transform(y_all)
     
         # Feature Selection Method
-        if feature_selection_method == "f_classif":
-            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "mutual_info_classif":
-            selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "chi2":
-            selector = SelectKBest(score_func=chi2, k=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "RFE (LogisticRegression)":
-            selector = RFE(LogisticRegression(), n_features_to_select=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "RFE (LinearSVC)":
-            selector = RFE(LinearSVC(), n_features_to_select=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "RFE (RandomForest)":
+        if feature_selection_method == "SelectKBest (ANOVA F-statistic)":
+            selector = SelectKBest(score_func=f_classif, k=num_features).fit(X_all, y_encoded)        
+        elif feature_selection_method == "Recursive Feature Elimination (RFE)":
+            rf = RandomForestClassifier(n_estimators=100, random_state=42)
+            selector = RFE(rf, n_features_to_select=num_features).fit(X_all, y_encoded)          
+        elif feature_selection_method == "VarianceThreshold":
+            selector = VarianceThreshold(threshold=0.1).fit(X_all, y_encoded)
+        elif feature_selection_method == "Random Forest Feature Importance":
             selector = RFE(RandomForestClassifier(), n_features_to_select=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "Tree-Based":
-            selector = SelectFromModel(RandomForestClassifier(), max_features=num_features).fit(X_all, y_encoded)
-        elif feature_selection_method == "LDA":
+        elif feature_selection_method == "L1-based (Lasso)":
+            lasso = Lasso(alpha=0.01)
+            lasso.fit(X_scaled, y)
+            mask = np.abs(lasso.coef_) > 0
+            selector = X_scaled[:, mask]
+        elif feature_selection_method == "Mutual Information":
+            selector = SelectKBest(score_func=mutual_info_classif, k=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "Chi-Square":
+            selector = SelectKBest(score_func=chi2, k=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "ANOVA F-statistic":
+            selector = SelectKBest(f_classif, k=num_features).fit(X_all, y_encoded)
+        elif feature_selection_method == "Linear Discriminant Analysis(LDA)":
             selector = SelectFromModel(LinearDiscriminantAnalysis(), max_features=num_features).fit(X_all, y_encoded)
         elif feature_selection_method == "GaussianNB":
             selector = SelectFromModel(GaussianNB(), max_features=num_features).fit(X_all, y_encoded)
         elif feature_selection_method == "KNN":
             selector = SelectFromModel(KNeighborsClassifier(), max_features=num_features).fit(X_all, y_encoded)
-    
+        
         X_selected = selector.transform(X_all)
         selected_features = X_all.columns[selector.get_support()].tolist()
     
