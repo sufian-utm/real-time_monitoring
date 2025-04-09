@@ -62,8 +62,45 @@ def plot_feature_selection_scores(scores, feature_names, title="Feature Selectio
     st.pyplot(plt)
     plt.close()
 
+# Custom Attention Layer
+class Attention1D(tf.keras.layers.Layer):
+    def call(self, inputs):
+        score = tf.keras.layers.Dense(1, activation='tanh')(inputs)
+        weights = tf.nn.softmax(score, axis=1)
+        output = tf.reduce_sum(inputs * weights, axis=1)
+        return output
+
+# Build the Model
+def build_model(input_shape, type_output, size_output, model_type):
+    inputs = Input(shape=input_shape)  # Use Functional API to define inputs
+    x = inputs  # Start with the input layer
+
+    if model_type == "MLP":
+        x = Flatten()(x)
+        x = Dense(128, activation='relu')(x)
+    elif model_type == "CNN1D":
+        x = Conv1D(64, 3, activation='relu')(x)
+        x = MaxPooling1D()(x)
+        x = Flatten()(x)
+    elif model_type == "LSTM1D":
+        x = LSTM(64)(x)
+    elif model_type == "GRU1D":
+        x = GRU(64)(x)
+    elif model_type == "BiLSTM1D":
+        x = Bidirectional(LSTM(64))(x)
+    elif model_type == "ResNet1D":
+        x = Conv1D(64, 3, activation='relu', padding='same')(x)
+        x = Conv1D(64, 3, activation='relu', padding='same')(x)
+        x = tf.keras.layers.Add()([inputs, x])  # Skip connection
+        x = Flatten()(x)
+    elif model_type == "CNN+BiGRU":
+        x = Conv1D(32, 3, activation='relu')(x)
+        x = Bidirectional(GRU(64))(x)
+    elif model_type == "CNN+Attention":
+        x = Conv1D
+
 # Shared Variables and Constants
-# ML Models
+
 ml_models = {
     "Logistic Regression": LogisticRegression(max_iter=1000),
     "Random Forest": RandomForestClassifier(),
@@ -76,6 +113,7 @@ ml_models = {
     "Linear SVC": LinearSVC(),
     "Passive Aggressive": PassiveAggressiveClassifier(),
     }
+
 dl_models = [
     "MLP", "CNN1D", "LSTM1D", "GRU1D", "BiLSTM1D", "ResNet1D",
     "Transformer1D", "DenseNet1D", "CNN+BiGRU", "CNN+Attention"
@@ -521,67 +559,6 @@ if df is not None:
             key="dl_model_selectbox"
         )
     
-        # Custom Attention Layer
-        class Attention1D(tf.keras.layers.Layer):
-            def call(self, inputs):
-                score = tf.keras.layers.Dense(1, activation='tanh')(inputs)
-                weights = tf.nn.softmax(score, axis=1)
-                output = tf.reduce_sum(inputs * weights, axis=1)
-                return output
-        
-        # Build the Model
-        def build_model(input_shape, type_output, size_output, model_type):
-            inputs = Input(shape=input_shape)  # Use Functional API to define inputs
-            x = inputs  # Start with the input layer
-            
-            if model_type == "MLP":
-                x = Flatten()(x)
-                x = Dense(128, activation='relu')(x)
-            elif model_type == "CNN1D":
-                x = Conv1D(64, 3, activation='relu')(x)
-                x = MaxPooling1D()(x)
-                x = Flatten()(x)
-            elif model_type == "LSTM1D":
-                x = LSTM(64)(x)
-            elif model_type == "GRU1D":
-                x = GRU(64)(x)
-            elif model_type == "BiLSTM1D":
-                x = Bidirectional(LSTM(64))(x)
-            elif model_type == "ResNet1D":
-                x = Conv1D(64, 3, activation='relu', padding='same')(x)
-                x = Conv1D(64, 3, activation='relu', padding='same')(x)
-                x = tf.keras.layers.Add()([inputs, x])  # Skip connection
-                x = Flatten()(x)
-            elif model_type == "CNN+BiGRU":
-                x = Conv1D(32, 3, activation='relu')(x)
-                x = Bidirectional(GRU(64))(x)
-            elif model_type == "CNN+Attention":
-                x = Conv1D(64, 3, activation='relu')(x)
-                x = Attention1D()(x)  # Apply custom attention layer
-            else:
-                x = Flatten()(x)
-            
-            x = Dense(64, activation='relu')(x)
-            x = Dropout(0.3)(x)
-            
-            # Outputs
-            type_out = Dense(type_output.shape[1], activation='softmax', name='type_output')(x)
-            size_out = Dense(size_output.shape[1], activation='softmax', name='size_output')(x)
-            
-            # Define model
-            model = Model(inputs=inputs, outputs=[type_out, size_out])
-            
-            return compile_model(model, type_output, size_output)
-        
-        # Compile Model
-        def compile_model(model, type_output, size_output):
-            model.compile(
-                optimizer=Adam(),
-                loss={"type_output": "categorical_crossentropy", "size_output": "categorical_crossentropy"},
-                metrics={"type_output": "accuracy", "size_output": "accuracy"}
-            )
-            return model
-
         # Model checkpoint callback
         checkpoint_cb = ModelCheckpoint('best_model.weights.h5', save_best_only=True, save_weights_only=True)
         
